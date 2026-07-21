@@ -38,6 +38,11 @@ public class GlobalExceptionHandler {
         return badRequest(ex.getMessage(), ex.getDetails());
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        return badRequest(ex.getMessage(), List.of());
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiErrorResponse> handleUnreadable(HttpMessageNotReadableException ex) {
         Throwable cause = ex.getCause();
