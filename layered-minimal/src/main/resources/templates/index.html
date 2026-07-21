@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Centinela - Ingesta</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 0; }
+        .container { max-width: 980px; margin: 0 auto; padding: 32px 20px 60px; }
+        .card { background: #111827; border: 1px solid #334155; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+        h1, h2 { margin-top: 0; color: white; }
+        form { display: grid; gap: 12px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        label { display: flex; flex-direction: column; font-size: 0.95rem; color: #cbd5e1; }
+        input, select { padding: 10px; border-radius: 8px; border: 1px solid #475569; background: #020617; color: white; }
+        button { padding: 10px 14px; border: none; border-radius: 8px; background: linear-gradient(135deg, #0ea5e9, #2563eb); color: white; font-weight: bold; cursor: pointer; }
+        .message { padding: 12px; border-radius: 10px; margin-top: 12px; }
+        .success { background: #052e16; color: #bbf7d0; }
+        .error { background: #450a0a; color: #fecaca; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border-bottom: 1px solid #334155; padding: 10px 8px; text-align: left; }
+        .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #1d4ed8; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h1>Centinela · Ingesta de transacciones</h1>
+        <p>Esta vista permite probar el flujo básico de creación y consulta de transacciones de forma sencilla.</p>
+
+        <div th:if="${message}" th:classappend="${error} ? 'error' : 'success'" class="message">
+            <span th:text="${message}"></span>
+        </div>
+
+        <form th:action="@{/}" method="post">
+            <div class="grid">
+                <label>Transaction ID
+                    <input type="text" name="transactionId" required>
+                </label>
+                <label>Account ID
+                    <input type="text" name="accountId" required>
+                </label>
+                <label>Monto
+                    <input type="number" step="0.01" name="amount" required>
+                </label>
+                <label>Moneda
+                    <input type="text" name="currency" value="COP" required>
+                </label>
+                <label>Fecha y hora (ISO)
+                    <input type="text" name="occurredAt" value="2026-07-21T12:00:00Z" required>
+                </label>
+                <label>Latitud
+                    <input type="number" step="0.0001" name="latitude" value="4.7110" required>
+                </label>
+                <label>Longitud
+                    <input type="number" step="0.0001" name="longitude" value="-74.0721" required>
+                </label>
+                <label>Merchant ID
+                    <input type="text" name="merchantId" required>
+                </label>
+                <label>Merchant Category
+                    <input type="text" name="merchantCategory" value="retail" required>
+                </label>
+            </div>
+            <button type="submit">Crear transacción</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Consultar transacción</h2>
+        <form th:action="@{/transaction}" method="get">
+            <label>Transaction ID
+                <input type="text" name="transactionId" required>
+            </label>
+            <button type="submit">Buscar</button>
+        </form>
+
+        <div th:if="${transaction}" style="margin-top: 16px;">
+            <p><strong>ID:</strong> <span th:text="${transaction.transactionId}"></span></p>
+            <p><strong>Cuenta:</strong> <span th:text="${transaction.accountId}"></span></p>
+            <p><strong>Monto:</strong> <span th:text="${transaction.amount}"></span></p>
+            <p><strong>Moneda:</strong> <span th:text="${transaction.currency}"></span></p>
+            <p><strong>Estado ingreso:</strong> <span class="pill" th:text="${transaction.ingestedAt}"></span></p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -4,6 +4,7 @@ com\ingesta\service\EvidenciaService.class
 com\ingesta\dto\ApiErrorResponse.class
 com\ingesta\exception\TransactionNotFoundException.class
 com\ingesta\IngestaApplication.class
+com\ingesta\controller\WebController.class
 com\ingesta\repository\InMemoryTransactionRepository.class
 com\ingesta\repository\TransactionRepository$SaveOutcome.class
 com\ingesta\controller\TransactionController.class
