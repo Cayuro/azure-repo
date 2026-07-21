@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 
 @Controller
 public class WebController {
@@ -26,6 +27,7 @@ public class WebController {
     public String home(Model model) {
         return "index";
     }
+    mayor gana?
 
     @PostMapping("/")
     public String createTransaction(@RequestParam String transactionId,
@@ -38,8 +40,14 @@ public class WebController {
                                     @RequestParam String merchantId,
                                     @RequestParam String merchantCategory,
                                     Model model) {
+        if (Objects.isNull(transactionId) || transactionId.trim().isEmpty()) {
+            model.addAttribute("message", "El transactionId es obligatorio.");
+            model.addAttribute("error", true);
+            return "index";
+        }
+
         TransactionRequest request = new TransactionRequest();
-        request.setTransactionId(transactionId);
+        request.setTransactionId(transactionId.trim());
         request.setAccountId(accountId);
         request.setAmount(amount);
         request.setCurrency(currency);
@@ -66,6 +74,8 @@ public class WebController {
         try {
             Transaction transaction = transactionService.getById(transactionId);
             model.addAttribute("transaction", transaction);
+            model.addAttribute("message", "Transacción encontrada.");
+            model.addAttribute("error", false);
         } catch (Exception ex) {
             model.addAttribute("message", ex.getMessage());
             model.addAttribute("error", true);
