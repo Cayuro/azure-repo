@@ -49,4 +49,10 @@ class TransactionControllerIT {
                 .andExpect(jsonPath("$.transactionId").value("tx-1001"))
                 .andExpect(jsonPath("$.merchantCategory").value("retail"));
     }
+
+    @Test
+    void missingTransactionPathShouldReturnNotFound() throws Exception {
+        mockMvc.perform(get("/api/v1/transactions"))
+                .andExpect(status().isNotFound());
+    }
 }

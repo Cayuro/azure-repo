@@ -1,5 +1,6 @@
 package com.ingesta.controller;
 
+import com.ingesta.dto.ApiErrorResponse;
 import com.ingesta.dto.EvidenciaResponse;
 import com.ingesta.dto.TransactionRequest;
 import com.ingesta.dto.TransactionResponse;
@@ -40,6 +41,16 @@ public class TransactionController {
             return ResponseEntity.ok(response);
         }
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiErrorResponse> getTransactionsRoot() {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiErrorResponse.of(
+                        HttpStatus.NOT_FOUND.value(),
+                        HttpStatus.NOT_FOUND.getReasonPhrase(),
+                        "Debe indicar un transactionId. Ejemplo: GET /api/v1/transactions/{transactionId}"
+                ));
     }
 
     @GetMapping("/{transactionId}")

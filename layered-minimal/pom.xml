@@ -13,7 +13,7 @@
 	<artifactId>ingesta-layered-minimal</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>ingesta-layered-minimal</name>
-	<description>Versi&oacute;n m&iacute;nima layered de la API de ingesta</description>
+	<description>Version minima layered de la API de ingesta</description>
 
 	<properties>
 		<java.version>21</java.version>
