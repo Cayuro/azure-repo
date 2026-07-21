@@ -27,7 +27,6 @@ public class WebController {
     public String home(Model model) {
         return "index";
     }
-    mayor gana?
 
     @PostMapping("/")
     public String createTransaction(@RequestParam String transactionId,
