@@ -14,7 +14,7 @@ public class InMemoryTransactionRepository implements TransactionRepository {
 
     @Override
     public SaveOutcome saveIfAbsent(Transaction transaction) {
-        Transaction previous = store.putIfAbsent(transaction.transactionId(), transaction);
+        Transaction previous = store.putIfAbsent(transaction.getTransactionId(), transaction);
         return previous == null ? SaveOutcome.CREATED : SaveOutcome.ALREADY_EXISTS;
     }
 

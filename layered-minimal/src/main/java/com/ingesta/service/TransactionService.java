@@ -29,23 +29,23 @@ public class TransactionService {
 
         Instant ingestedAt = Instant.now(clock);
         Transaction transaction = new Transaction(
-                request.transactionId(),
-                request.accountId(),
-                request.amount(),
-                request.currency().toUpperCase(),
-                request.occurredAt(),
+                request.getTransactionId(),
+                request.getAccountId(),
+                request.getAmount(),
+                request.getCurrency().toUpperCase(),
+                request.getOccurredAt(),
                 ingestedAt,
-                request.latitude(),
-                request.longitude(),
-                request.merchantId(),
-                request.merchantCategory()
+                request.getLatitude(),
+                request.getLongitude(),
+                request.getMerchantId(),
+                request.getMerchantCategory()
         );
 
         TransactionRepository.SaveOutcome outcome = repository.saveIfAbsent(transaction);
         if (outcome == TransactionRepository.SaveOutcome.ALREADY_EXISTS) {
-            return new TransactionResponse(transaction.transactionId(), "YA_RECIBIDA", transaction.ingestedAt());
+            return new TransactionResponse(transaction.getTransactionId(), "YA_RECIBIDA", transaction.getIngestedAt());
         }
-        return new TransactionResponse(transaction.transactionId(), "RECIBIDA", transaction.ingestedAt());
+        return new TransactionResponse(transaction.getTransactionId(), "RECIBIDA", transaction.getIngestedAt());
     }
 
     public Transaction getById(String transactionId) {
@@ -55,7 +55,7 @@ public class TransactionService {
 
     private void validate(TransactionRequest request) {
         List<String> errors = new ArrayList<>();
-        if (request.occurredAt() != null && request.occurredAt().isAfter(Instant.now(clock))) {
+        if (request.getOccurredAt() != null && request.getOccurredAt().isAfter(Instant.now(clock))) {
             errors.add("occurredAt no puede ser futura");
         }
         if (!errors.isEmpty()) {
