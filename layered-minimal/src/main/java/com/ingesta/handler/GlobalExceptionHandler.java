@@ -4,7 +4,7 @@ import com.ingesta.dto.ApiErrorResponse;
 import com.ingesta.exception.InvalidTransactionException;
 import com.ingesta.exception.TransactionNotFoundException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
-import jakarta.validation.ConstraintViolationException;
+import javax.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -46,7 +46,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiErrorResponse> handleUnreadable(HttpMessageNotReadableException ex) {
         Throwable cause = ex.getCause();
-        if (cause instanceof UnrecognizedPropertyException unrecognized) {
+        if (cause instanceof UnrecognizedPropertyException) {
+            UnrecognizedPropertyException unrecognized = (UnrecognizedPropertyException) cause;
             return badRequest("Campo no contemplado en el contrato: " + unrecognized.getPropertyName(), List.of());
         }
         return badRequest("El cuerpo de la peticion no tiene un formato valido", List.of());

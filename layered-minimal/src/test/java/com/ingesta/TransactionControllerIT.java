@@ -23,19 +23,17 @@ class TransactionControllerIT {
 
     @Test
     void postThenGetShouldWork() throws Exception {
-        String payload = """
-                {
-                  "transactionId": "tx-1001",
-                  "accountId": "acc-77",
-                  "amount": 1250.50,
-                  "currency": "COP",
-                  "occurredAt": "2026-07-17T14:00:00Z",
-                  "latitude": 4.7110,
-                  "longitude": -74.0721,
-                  "merchantId": "m-990",
-                  "merchantCategory": "retail"
-                }
-                """;
+        String payload = "{\n"
+                + "  \"transactionId\": \"tx-1001\",\n"
+                + "  \"accountId\": \"acc-77\",\n"
+                + "  \"amount\": 1250.50,\n"
+                + "  \"currency\": \"COP\",\n"
+                + "  \"occurredAt\": \"2026-07-17T14:00:00Z\",\n"
+                + "  \"latitude\": 4.7110,\n"
+                + "  \"longitude\": -74.0721,\n"
+                + "  \"merchantId\": \"m-990\",\n"
+                + "  \"merchantCategory\": \"retail\"\n"
+                + "}";
 
         mockMvc.perform(post("/api/v1/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
