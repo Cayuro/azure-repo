@@ -68,7 +68,22 @@ az webapp vnet-integration add \
   --vnet "$VNET_NAME" \
   --subnet "$SUBNET_NAME" \
   --output none
-# ---------- 7. Salida Informativa ----------
+
+# ---------- 7. Habilitar Basic Auth en SCM (requerido para despliegue vía publish profile / GitHub Actions) ----------
+# Sin este paso, cualquier despliegue por Zip Deploy o MSDeploy con publish profile falla con:
+# "Publish profile is invalid for app-name and slot-name provided", aunque las credenciales sean correctas.
+# Azure deshabilita Basic Auth por defecto en App Services nuevos por seguridad.
+echo ">> Habilitando Basic Auth (SCM) para permitir despliegue vía publish profile..."
+az resource update \
+  --resource-group "$RESOURCE_GROUP" \
+  --name scm \
+  --namespace Microsoft.Web \
+  --resource-type basicPublishingCredentialsPolicies \
+  --parent "sites/${APP_NAME}" \
+  --set properties.allow=true \
+  --output none
+
+# ---------- 8. Salida Informativa ----------
 echo ""
 echo "==================== RESUMEN DE DESPLIEGUE ===================="
 echo "Resource Group : $RESOURCE_GROUP ($RG_LOCATION)"
@@ -79,4 +94,5 @@ echo "Runtime         : $RUNTIME"
 echo "URL Pública     : https://${APP_NAME}.azurewebsites.net"
 echo "Subred VNet     : $SUBNET_NAME en $VNET_NAME"
 echo "Managed Identity: $(az webapp identity show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query principalId -o tsv 2>/dev/null || echo 'Pendiente')"
+echo "Basic Auth SCM  : habilitado (requerido para publish profile)"
 echo "================================================================"
