@@ -6,6 +6,7 @@ import com.ingesta.exception.InvalidTransactionException;
 import com.ingesta.exception.TransactionNotFoundException;
 import com.ingesta.model.Transaction;
 import com.ingesta.repository.TransactionRepository;
+import com.ingesta.messaging.TransactionEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -17,10 +18,12 @@ import java.util.List;
 public class TransactionService {
 
     private final TransactionRepository repository;
+    private final TransactionEventPublisher eventPublisher;
     private final Clock clock;
 
-    public TransactionService(TransactionRepository repository, Clock clock) {
+    public TransactionService(TransactionRepository repository, TransactionEventPublisher eventPublisher, Clock clock) {
         this.repository = repository;
+        this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
 
@@ -43,8 +46,11 @@ public class TransactionService {
 
         TransactionRepository.SaveOutcome outcome = repository.saveIfAbsent(transaction);
         if (outcome == TransactionRepository.SaveOutcome.ALREADY_EXISTS) {
-            return new TransactionResponse(transaction.transactionId(), "YA_RECIBIDA", transaction.ingestedAt());
+            Transaction existingTransaction = repository.findById(transaction.transactionId())
+                    .orElse(transaction);
+            return new TransactionResponse(existingTransaction.transactionId(), "YA_RECIBIDA", existingTransaction.ingestedAt());
         }
+        eventPublisher.publish(transaction);
         return new TransactionResponse(transaction.transactionId(), "RECIBIDA", transaction.ingestedAt());
     }
 
