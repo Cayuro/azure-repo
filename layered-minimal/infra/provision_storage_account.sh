@@ -7,16 +7,17 @@
 # =============================================================
 set -euo pipefail
 # ---------- VARIABLES PARAMETRIZADAS ----------
-PROJECT="centinela"
-ENV="prod"
-LOCATION="chilecentral"                              # Misma region que el App Service
-RESOURCE_GROUP="rg-${PROJECT}-${ENV}"
-APP_NAME="appcentinelaprodgrupo3"                    # App Service consumidor (managed identity)
-STORAGE_ACCOUNT="sttransaccionesfase1"
-SKU="Standard_LRS"
-CONTAINER_NAME="evidencias-financieras-privado"
-QUEUE_NAME="cola-transacciones-ingesta"
-QUEUE_POISON_NAME="cola-transacciones-ingesta-poison"
+PROJECT="${PROJECT:-centinela}"
+ENV="${ENV:-prod}"
+LOCATION="${LOCATION:-chilecentral}"                              # Misma region que el App Service
+RESOURCE_GROUP="${RESOURCE_GROUP:-rg-${PROJECT}-${ENV}}"
+APP_RESOURCE_GROUP="${APP_RESOURCE_GROUP:-$RESOURCE_GROUP}"
+APP_NAME="${APP_NAME:-appcentinelaprodgrupo3}"                    # App Service consumidor (managed identity)
+STORAGE_ACCOUNT="${STORAGE_ACCOUNT:-sttransaccionesfase1}"
+SKU="${SKU:-Standard_LRS}"
+CONTAINER_NAME="${CONTAINER_NAME:-evidencias-financieras-privado}"
+QUEUE_NAME="${QUEUE_NAME:-cola-transacciones-ingesta}"
+QUEUE_POISON_NAME="${QUEUE_POISON_NAME:-cola-transacciones-ingesta-poison}"
 # ---------- 1. Verificar Resource Group ----------
 RG_LOCATION=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv 2>/dev/null || echo "$LOCATION")
 echo ">> Verificando Resource Group: $RESOURCE_GROUP (Ubicación RG: $RG_LOCATION)"
