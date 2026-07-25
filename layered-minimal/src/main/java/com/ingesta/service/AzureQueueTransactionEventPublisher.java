@@ -6,6 +6,7 @@ import com.ingesta.dto.TransaccionIngestadaEvento;
 import com.ingesta.model.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +18,9 @@ public class AzureQueueTransactionEventPublisher implements TransactionEventPubl
     private final QueueClient queueClient;
     private final ObjectMapper objectMapper;
 
-    public AzureQueueTransactionEventPublisher(QueueClient ingestaQueueClient, ObjectMapper objectMapper) {
+    public AzureQueueTransactionEventPublisher(
+            @Qualifier("ingestaQueueClient") QueueClient ingestaQueueClient,
+            ObjectMapper objectMapper) {
         this.queueClient = ingestaQueueClient;
         this.objectMapper = objectMapper;
     }

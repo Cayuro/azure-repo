@@ -4,6 +4,15 @@ Documenta el comportamiento esperado de la cola `cola-transacciones-ingesta` (y 
 de poison messages `cola-transacciones-ingesta-poison`) usada para procesar las
 transacciones/evidencias de forma asincrona.
 
+La cola `cola-casos-fraude`, donde el motor de scoring encola los casos que superan el
+umbral (ver `FraudCaseEventPublisher` / `AzureQueueFraudCaseEventPublisher`), es del mismo
+tipo (Azure Storage Queue) y hereda exactamente las mismas garantias descritas aqui: un
+caso publicado no se pierde aunque el consumidor (equipo analitico) este caido, ya que el
+mensaje permanece en la cola -invisible durante el `visibilityTimeout`, visible de nuevo si
+expira sin `DeleteMessage`- hasta que se procesa con exito. Debe tener su propia cola
+poison (`cola-casos-fraude-poison`) y su propio monitoreo de `ApproximateMessagesCount`,
+igual que la cola de ingesta.
+
 Estas dos colas siguen la convencion `{nombre}` / `{nombre}-poison` que usa de forma
 nativa el **Queue trigger de Azure Functions / WebJobs SDK** sobre Azure Storage Queue:
 si el consumidor esta implementado con ese binding, el movimiento a la cola poison es
