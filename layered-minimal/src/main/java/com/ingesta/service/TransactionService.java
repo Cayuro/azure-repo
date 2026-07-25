@@ -18,10 +18,12 @@ public class TransactionService {
 
     private final TransactionRepository repository;
     private final Clock clock;
+    private final TransactionEventPublisher eventPublisher;
 
-    public TransactionService(TransactionRepository repository, Clock clock) {
+    public TransactionService(TransactionRepository repository, Clock clock, TransactionEventPublisher eventPublisher) {
         this.repository = repository;
         this.clock = clock;
+        this.eventPublisher = eventPublisher;
     }
 
     public TransactionResponse ingest(TransactionRequest request) {
@@ -45,6 +47,7 @@ public class TransactionService {
         if (outcome == TransactionRepository.SaveOutcome.ALREADY_EXISTS) {
             return new TransactionResponse(transaction.getTransactionId(), "YA_RECIBIDA", transaction.getIngestedAt());
         }
+        eventPublisher.publicarTransaccionIngestada(transaction);
         return new TransactionResponse(transaction.getTransactionId(), "RECIBIDA", transaction.getIngestedAt());
     }
 
