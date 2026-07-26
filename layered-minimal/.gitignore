@@ -1,2 +1,7 @@
 /target
+
+# Ignore Markdown files by default
 *.md
+
+# Allow project documentation
+!documentation/**/*.md
