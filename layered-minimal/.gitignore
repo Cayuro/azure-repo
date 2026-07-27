@@ -1,4 +1,7 @@
 /target
+
+# Ignore Markdown files by default
 *.md
-C:\Users\Coders\Desktop\azure-repo\layered-minimal\src\main\resources\application.properties
-layered-minimal\src\main\resources\application.properties
+
+# Allow project documentation
+!documentation/**/*.md
