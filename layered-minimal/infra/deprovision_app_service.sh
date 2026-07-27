@@ -3,7 +3,7 @@
 # Centinela - Script de baja: App Service Plan + App Service
 # Contraparte exacta de provision_app_service.sh (Requisito 2.3 - IaC reversible)
 # Región de Recursos: chilecentral | Subred: snet-app-prod
-# Responsable: Santiago (PO / Infraestructura)
+# Responsable: Equipo de Infraestructura
 # =============================================================
 set -euo pipefail
 # ---------- VARIABLES PARAMETRIZADAS (deben ser IDÉNTICAS a provision_app_service.sh) ----------
