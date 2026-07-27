@@ -1,13 +1,13 @@
 package com.ingesta.dto;
 
-import com.ingesta.model.CasoFraude;
+import com.ingesta.model.FraudCase;
 
 public class CasoFraudeDetectadoEvento {
 
     private final String eventType;
-    private final CasoFraude data;
+    private final FraudCase data;
 
-    public CasoFraudeDetectadoEvento(CasoFraude data) {
+    public CasoFraudeDetectadoEvento(FraudCase data) {
         this.eventType = "CASO_FRAUDE_DETECTADO";
         this.data = data;
     }
@@ -16,7 +16,7 @@ public class CasoFraudeDetectadoEvento {
         return eventType;
     }
 
-    public CasoFraude getData() {
+    public FraudCase getData() {
         return data;
     }
 }

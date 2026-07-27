@@ -1,8 +1,6 @@
 # Ingesta layered minimal
 
-Version simple de la API de ingesta con arquitectura layered y una interfaz web ligera para probar el flujo de negocio.
-
-## Arquitectura
+Versi&oacute;n simple de la API de ingesta para entender el flujo con arquitectura layered:
 
 - controller
 - service
@@ -10,44 +8,26 @@ Version simple de la API de ingesta con arquitectura layered y una interfaz web 
 - dto
 - exception
 
-Las transacciones se guardan en memoria. La carga de evidencias usa Azure Blob Storage sin claves, mediante `DefaultAzureCredentialBuilder` y RBAC.
+Las transacciones se guardan en memoria. La carga de evidencias s&iacute; usa Azure Blob Storage
+(sin claves, mediante `DefaultAzureCredentialBuilder` / RBAC).
 
-## Requisitos
-
-- Java 11
-- Maven 3.8+
-- Azure CLI autenticado si vas a usar Blob Storage
-
-## Configuracion
+## Configuraci&oacute;n
 
 Define la cuenta de Azure Storage antes de subir evidencias (ver `application.properties`):
 
-```properties
-azure.storage.account-name=<nombre-de-tu-cuenta>
-azure.storage.container-name=evidencias-financieras-privado
+```
+AZURE_STORAGE_ACCOUNT_NAME=<nombre-de-tu-cuenta>
 ```
 
-La autenticacion usa la cadena de credenciales por defecto de Azure Identity (`az login`, Managed Identity, variables `AZURE_CLIENT_ID`/`AZURE_CLIENT_SECRET`/`AZURE_TENANT_ID`, etc.).
+La autenticaci&oacute;n usa la cadena de credenciales por defecto de Azure Identity (`az login`,
+variables `AZURE_CLIENT_ID`/`AZURE_CLIENT_SECRET`/`AZURE_TENANT_ID`, Managed Identity, etc.).
 
-## Ejecutar localmente
+## Ejecutar
 
 ```powershell
-mvn test
-mvn spring-boot:run
+..\mvnw.cmd -f .\pom.xml test
+..\mvnw.cmd -f .\pom.xml spring-boot:run
 ```
-
-Luego abre:
-
-- http://localhost:8080/ para la interfaz web
-- http://localhost:8080/api/v1/transactions para la API
-
-## UI web
-
-La aplicacion incluye una pequeña interfaz con Thymeleaf para:
-
-- crear transacciones
-- consultar transacciones por ID
-- ver mensajes de resultado
 
 ## Endpoints
 
@@ -55,36 +35,10 @@ La aplicacion incluye una pequeña interfaz con Thymeleaf para:
 - `GET /api/v1/transactions/{transactionId}`
 - `POST /api/v1/transactions/{transactionId}/evidencias` (multipart, campo `file`)
 
-## Respuestas
+## Respuesta
 
-- `202 Accepted` cuando la transaccion es nueva
+- `202 Accepted` cuando la transacci&oacute;n es nueva
 - `200 OK` cuando el `transactionId` ya existe
 - `201 Created` cuando la evidencia se sube correctamente
-- `400 Bad Request` para validaciones
+- `400 Bad Request` para validaciones (incluye tama&ntilde;o/tipo de archivo inv&aacute;lido)
 - `404 Not Found` para consultas inexistentes o evidencias de transacciones que no existen
-
-## Pruebas
-
-Se incluyen pruebas de integración para:
-
-- flujo de API de transacciones
-- renderizado de la UI web
-- creación y consulta desde el controlador web
-
-Ejecutar:
-
-```powershell
-mvn test
-```
-
-## Despliegue en Azure App Service
-
-El proyecto ya esta preparado para despliegue en App Service con Java 11. El artefacto generado es:
-
-- `target/ingesta-layered-minimal-0.0.1-SNAPSHOT.jar`
-
-Para la configuracion de runtime, se incluye `system.properties` con:
-
-```properties
-java.runtime.version=11
-```

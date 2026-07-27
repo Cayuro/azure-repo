@@ -3,7 +3,7 @@ package com.ingesta.service;
 import com.azure.storage.queue.QueueClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ingesta.dto.CasoFraudeDetectadoEvento;
-import com.ingesta.model.CasoFraude;
+import com.ingesta.model.FraudCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,13 +35,13 @@ public class AzureQueueFraudCaseEventPublisher implements FraudCaseEventPublishe
      */
     @Override
     @Async("eventoIngestaExecutor")
-    public void publicarCasoFraude(CasoFraude caso) {
+    public void publicarCasoFraude(FraudCase caso) {
         try {
             String mensaje = objectMapper.writeValueAsString(new CasoFraudeDetectadoEvento(caso));
             queueClient.sendMessage(mensaje);
         } catch (Exception ex) {
             log.error("No se pudo publicar el caso de fraude {} para la transaccion {}",
-                    caso.getCaseId(), caso.getTransactionId(), ex);
+                    caso.caseId(), caso.transactionId(), ex);
         }
     }
 }

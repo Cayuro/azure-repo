@@ -1,8 +1,8 @@
 package com.ingesta.service;
 
-import com.ingesta.model.CasoFraude;
+import com.ingesta.model.FraudCase;
 
 public interface FraudCaseEventPublisher {
 
-    void publicarCasoFraude(CasoFraude caso);
+    void publicarCasoFraude(FraudCase caso);
 }

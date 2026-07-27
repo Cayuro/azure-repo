@@ -6,6 +6,7 @@ import com.ingesta.exception.InvalidTransactionException;
 import com.ingesta.exception.TransactionNotFoundException;
 import com.ingesta.model.Transaction;
 import com.ingesta.repository.TransactionRepository;
+import com.ingesta.messaging.TransactionEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -17,13 +18,19 @@ import java.util.List;
 public class TransactionService {
 
     private final TransactionRepository repository;
-    private final Clock clock;
     private final TransactionEventPublisher eventPublisher;
+    private final IngestaQueueEventPublisher ingestaQueueEventPublisher;
+    private final Clock clock;
 
-    public TransactionService(TransactionRepository repository, Clock clock, TransactionEventPublisher eventPublisher) {
+    public TransactionService(
+            TransactionRepository repository,
+            TransactionEventPublisher eventPublisher,
+            IngestaQueueEventPublisher ingestaQueueEventPublisher,
+            Clock clock) {
         this.repository = repository;
-        this.clock = clock;
         this.eventPublisher = eventPublisher;
+        this.ingestaQueueEventPublisher = ingestaQueueEventPublisher;
+        this.clock = clock;
     }
 
     public TransactionResponse ingest(TransactionRequest request) {
@@ -31,24 +38,27 @@ public class TransactionService {
 
         Instant ingestedAt = Instant.now(clock);
         Transaction transaction = new Transaction(
-                request.getTransactionId(),
-                request.getAccountId(),
-                request.getAmount(),
-                request.getCurrency().toUpperCase(),
-                request.getOccurredAt(),
+                request.transactionId(),
+                request.accountId(),
+                request.amount(),
+                request.currency().toUpperCase(),
+                request.occurredAt(),
                 ingestedAt,
-                request.getLatitude(),
-                request.getLongitude(),
-                request.getMerchantId(),
-                request.getMerchantCategory()
+                request.latitude(),
+                request.longitude(),
+                request.merchantId(),
+                request.merchantCategory()
         );
 
         TransactionRepository.SaveOutcome outcome = repository.saveIfAbsent(transaction);
         if (outcome == TransactionRepository.SaveOutcome.ALREADY_EXISTS) {
-            return new TransactionResponse(transaction.getTransactionId(), "YA_RECIBIDA", transaction.getIngestedAt());
+            Transaction existingTransaction = repository.findById(transaction.transactionId())
+                    .orElse(transaction);
+            return new TransactionResponse(existingTransaction.transactionId(), "YA_RECIBIDA", existingTransaction.ingestedAt());
         }
-        eventPublisher.publicarTransaccionIngestada(transaction);
-        return new TransactionResponse(transaction.getTransactionId(), "RECIBIDA", transaction.getIngestedAt());
+        eventPublisher.publish(transaction);
+        ingestaQueueEventPublisher.publicarTransaccionIngestada(transaction);
+        return new TransactionResponse(transaction.transactionId(), "RECIBIDA", transaction.ingestedAt());
     }
 
     public Transaction getById(String transactionId) {
@@ -58,7 +68,7 @@ public class TransactionService {
 
     private void validate(TransactionRequest request) {
         List<String> errors = new ArrayList<>();
-        if (request.getOccurredAt() != null && request.getOccurredAt().isAfter(Instant.now(clock))) {
+        if (request.occurredAt() != null && request.occurredAt().isAfter(Instant.now(clock))) {
             errors.add("occurredAt no puede ser futura");
         }
         if (!errors.isEmpty()) {

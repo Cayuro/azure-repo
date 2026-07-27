@@ -1,13 +1,12 @@
 package com.ingesta.controller;
 
-import com.ingesta.dto.ApiErrorResponse;
 import com.ingesta.dto.EvidenciaResponse;
 import com.ingesta.dto.TransactionRequest;
 import com.ingesta.dto.TransactionResponse;
 import com.ingesta.model.Transaction;
 import com.ingesta.service.EvidenciaService;
 import com.ingesta.service.TransactionService;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -37,20 +36,10 @@ public class TransactionController {
     @PostMapping
     public ResponseEntity<TransactionResponse> receive(@Valid @RequestBody TransactionRequest request) {
         TransactionResponse response = service.ingest(request);
-        if ("YA_RECIBIDA".equals(response.getStatus())) {
+        if ("YA_RECIBIDA".equals(response.status())) {
             return ResponseEntity.ok(response);
         }
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
-    }
-
-    @GetMapping
-    public ResponseEntity<ApiErrorResponse> getTransactionsRoot() {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiErrorResponse.of(
-                        HttpStatus.NOT_FOUND.value(),
-                        HttpStatus.NOT_FOUND.getReasonPhrase(),
-                        "Debe indicar un transactionId. Ejemplo: GET /api/v1/transactions/{transactionId}"
-                ));
     }
 
     @GetMapping("/{transactionId}")
