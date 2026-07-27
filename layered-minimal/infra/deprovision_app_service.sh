@@ -42,13 +42,26 @@ az appservice plan delete \
   --yes \
   --output none 2>/dev/null || echo "   (ya no existía o falló, continuando...)"
 # ---------- 5. Quitar delegación de la subred ----------
-echo ">> Removiendo delegación de la subred '$SUBNET_NAME' en $VNET_NAME..."
-az network vnet subnet update \
+echo ">> Revisando delegación de la subred '$SUBNET_NAME' en $VNET_NAME..."
+SUBNET_DELEGATION=$(az network vnet subnet show \
   --resource-group "$RESOURCE_GROUP" \
   --vnet-name "$VNET_NAME" \
   --name "$SUBNET_NAME" \
-  --remove delegations \
-  --output none 2>/dev/null || echo "   (ya no existía o falló, continuando...)"
+  --query "delegations[].serviceName" -o tsv 2>/dev/null || true)
+
+if [[ -z "${SUBNET_DELEGATION}" ]]; then
+  echo "   (sin delegación configurada, continuando...)"
+elif [[ "${SUBNET_DELEGATION}" == "Microsoft.Web/serverFarms" ]]; then
+  echo ">> Removiendo delegación Microsoft.Web/serverFarms de la subred '$SUBNET_NAME'..."
+  az network vnet subnet update \
+    --resource-group "$RESOURCE_GROUP" \
+    --vnet-name "$VNET_NAME" \
+    --name "$SUBNET_NAME" \
+    --remove delegations \
+    --output none 2>/dev/null || echo "   (falló al remover delegación, continuando...)"
+else
+  echo "   (delegación inesperada detectada: ${SUBNET_DELEGATION}. No se remueve automáticamente.)"
+fi
 # ---------- 6. Resource Group ----------
 # NO se borra por defecto, ya que normalmente contiene otros recursos compartidos
 # (VNet, storage, etc.). Descomenta las líneas de abajo solo si quieres borrar
