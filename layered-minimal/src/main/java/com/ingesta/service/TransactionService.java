@@ -19,11 +19,17 @@ public class TransactionService {
 
     private final TransactionRepository repository;
     private final TransactionEventPublisher eventPublisher;
+    private final IngestaQueueEventPublisher ingestaQueueEventPublisher;
     private final Clock clock;
 
-    public TransactionService(TransactionRepository repository, TransactionEventPublisher eventPublisher, Clock clock) {
+    public TransactionService(
+            TransactionRepository repository,
+            TransactionEventPublisher eventPublisher,
+            IngestaQueueEventPublisher ingestaQueueEventPublisher,
+            Clock clock) {
         this.repository = repository;
         this.eventPublisher = eventPublisher;
+        this.ingestaQueueEventPublisher = ingestaQueueEventPublisher;
         this.clock = clock;
     }
 
@@ -51,6 +57,7 @@ public class TransactionService {
             return new TransactionResponse(existingTransaction.transactionId(), "YA_RECIBIDA", existingTransaction.ingestedAt());
         }
         eventPublisher.publish(transaction);
+        ingestaQueueEventPublisher.publicarTransaccionIngestada(transaction);
         return new TransactionResponse(transaction.transactionId(), "RECIBIDA", transaction.ingestedAt());
     }
 

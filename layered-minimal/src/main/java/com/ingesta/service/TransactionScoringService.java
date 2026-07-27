@@ -22,6 +22,7 @@ public class TransactionScoringService {
     private final TransactionScoreRepository scoreRepository;
     private final FraudCaseRepository fraudCaseRepository;
     private final TransactionScoringEngine scoringEngine;
+    private final FraudCaseEventPublisher fraudCaseEventPublisher;
     private final Clock clock;
 
     public TransactionScoringService(
@@ -29,11 +30,13 @@ public class TransactionScoringService {
             TransactionScoreRepository scoreRepository,
             FraudCaseRepository fraudCaseRepository,
             TransactionScoringEngine scoringEngine,
+            FraudCaseEventPublisher fraudCaseEventPublisher,
             Clock clock) {
         this.transactionRepository = transactionRepository;
         this.scoreRepository = scoreRepository;
         this.fraudCaseRepository = fraudCaseRepository;
         this.scoringEngine = scoringEngine;
+        this.fraudCaseEventPublisher = fraudCaseEventPublisher;
         this.clock = clock;
     }
 
@@ -56,6 +59,7 @@ public class TransactionScoringService {
                     Instant.now(clock),
                     score.activations());
             fraudCaseRepository.save(fraudCase);
+            fraudCaseEventPublisher.publicarCasoFraude(fraudCase);
         }
     }
 }
