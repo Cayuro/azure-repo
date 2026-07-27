@@ -69,19 +69,25 @@ az webapp vnet-integration add \
   --subnet "$SUBNET_NAME" \
   --output none
 
-# ---------- 7. Habilitar Basic Auth en SCM (requerido para despliegue vía publish profile / GitHub Actions) ----------
-# Sin este paso, cualquier despliegue por Zip Deploy o MSDeploy con publish profile falla con:
+# ---------- 7. Habilitar Basic Auth en SCM (solo si se despliega con publish profile) ----------
+# Sin este paso, los despliegues (Zip Deploy / MSDeploy) que usan publish profile pueden fallar con:
 # "Publish profile is invalid for app-name and slot-name provided", aunque las credenciales sean correctas.
 # Azure deshabilita Basic Auth por defecto en App Services nuevos por seguridad.
-echo ">> Habilitando Basic Auth (SCM) para permitir despliegue vía publish profile..."
-az resource update \
-  --resource-group "$RESOURCE_GROUP" \
-  --name scm \
-  --namespace Microsoft.Web \
-  --resource-type basicPublishingCredentialsPolicies \
-  --parent "sites/${APP_NAME}" \
-  --set properties.allow=true \
-  --output none
+ENABLE_SCM_BASIC_AUTH="${ENABLE_SCM_BASIC_AUTH:-true}"
+
+if [[ "$ENABLE_SCM_BASIC_AUTH" == "true" ]]; then
+  echo ">> Habilitando Basic Auth (SCM) para permitir despliegue vía publish profile..."
+  az resource update \
+    --resource-group "$RESOURCE_GROUP" \
+    --name scm \
+    --namespace Microsoft.Web \
+    --resource-type basicPublishingCredentialsPolicies \
+    --parent "sites/${APP_NAME}" \
+    --set properties.allow=true \
+    --output none
+else
+  echo ">> Basic Auth (SCM) se mantiene deshabilitado (ENABLE_SCM_BASIC_AUTH=false)."
+fi
 
 # ---------- 8. Salida Informativa ----------
 echo ""
