@@ -134,7 +134,7 @@ curl -i -X POST http://localhost:8080/api/v1/transactions \
 ### 1.6.3 Consultar una transacción
 
 ```bash
-curl -i http://localhost:8080/api/v1/transactions/tx-1001
+curl -i https://appcentinelaprodgrupo3.azurewebsites.net/api/v1/transactions/tx-1001
 ```
 
 **Respuesta esperada:** `200 OK` con el objeto `Transaction` completo. Si el id no existe: `404 Not Found`.
