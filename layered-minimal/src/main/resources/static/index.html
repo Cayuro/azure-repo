@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ingesta Financiera</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4efe8;
+      --bg-2: #e8eff7;
+      --panel: rgba(255, 255, 255, 0.82);
+      --text: #18202d;
+      --muted: #5c6778;
+      --accent: #0f766e;
+      --accent-2: #1d4ed8;
+      --danger: #b91c1c;
+      --border: rgba(24, 32, 45, 0.12);
+      --shadow: 0 22px 60px rgba(15, 23, 42, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 30%),
+        radial-gradient(circle at top right, rgba(29, 78, 216, 0.18), transparent 24%),
+        linear-gradient(135deg, var(--bg), var(--bg-2));
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 22px;
+    }
+
+    .title-card, .summary-card, .panel, .table-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .title-card {
+      padding: 28px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 4rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 14px 0 0;
+      max-width: 64ch;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .button, .link-button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+    }
+
+    .button:hover, .link-button:hover { transform: translateY(-1px); }
+
+    .button.primary { background: linear-gradient(135deg, var(--accent), #138f84); color: white; }
+    .button.secondary { background: white; color: var(--text); border: 1px solid var(--border); }
+    .button.ghost { background: transparent; color: var(--accent-2); border: 1px solid rgba(29, 78, 216, 0.2); }
+
+    .summary-card {
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .metric {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(24, 32, 45, 0.08);
+    }
+
+    .metric-label { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em; }
+    .metric-value { margin-top: 4px; font-size: 1.1rem; font-weight: 700; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .table-card, .panel {
+      padding: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: rgba(245, 247, 250, 0.96);
+      text-align: left;
+      padding: 12px 14px;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody td {
+      padding: 13px 14px;
+      border-bottom: 1px solid rgba(24, 32, 45, 0.08);
+      vertical-align: top;
+      font-size: 0.95rem;
+    }
+
+    tbody tr {
+      cursor: pointer;
+      transition: background 120ms ease;
+    }
+
+    tbody tr:hover,
+    tbody tr.active {
+      background: rgba(15, 118, 110, 0.08);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.12);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .badge.warn {
+      background: rgba(185, 28, 28, 0.12);
+      color: var(--danger);
+    }
+
+    .panel {
+      display: grid;
+      gap: 16px;
+      position: sticky;
+      top: 18px;
+    }
+
+    .detail-block {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(24, 32, 45, 0.08);
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      font-size: 0.95rem;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+
+    .value {
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(29, 78, 216, 0.1);
+      color: var(--accent-2);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .evidence-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .evidence-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(24, 32, 45, 0.1);
+      background: white;
+    }
+
+    .preview {
+      min-height: 240px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(24, 32, 45, 0.1);
+      background: linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(29, 78, 216, 0.08));
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      padding: 12px;
+    }
+
+    .preview img, .preview iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      object-fit: contain;
+      background: white;
+    }
+
+    .upload-form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .upload-form input, .upload-form select {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(24, 32, 45, 0.16);
+      background: white;
+      font: inherit;
+    }
+
+    .status {
+      min-height: 1.2em;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .status.error { color: var(--danger); }
+
+    @media (max-width: 1100px) {
+      .hero, .grid { grid-template-columns: 1fr; }
+      .panel { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="title-card">
+        <div class="badge">Ingesta / Riesgo / Evidencias</div>
+        <h1>Panel de monitoreo para transacciones y comprobantes.</h1>
+        <p class="subtitle">Consulta transacciones, abre el detalle del score, revisa las reglas activadas y visualiza comprobantes sin exponer el storage al navegador. El acceso a Swagger también está disponible desde este mismo panel.</p>
+        <div class="actions">
+          <button class="button primary" id="refreshButton">Actualizar transacciones</button>
+          <a class="link-button button secondary" href="/swagger-ui.html" target="_blank" rel="noreferrer">Abrir Swagger UI</a>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="metric">
+          <div class="metric-label">Estado</div>
+          <div class="metric-value" id="summaryState">Cargando datos...</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Transacciones</div>
+          <div class="metric-value" id="summaryTransactions">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Selección</div>
+          <div class="metric-value" id="summarySelected">Ninguna</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="table-card">
+        <div class="section-title">
+          <h2>Transacciones</h2>
+          <span class="badge" id="tableBadge">0 visibles</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Cuenta</th>
+                <th>Monto</th>
+                <th>Moneda</th>
+                <th>Ingresada</th>
+                <th>Comercio</th>
+              </tr>
+            </thead>
+            <tbody id="transactionsBody">
+              <tr><td colspan="6">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <div class="section-title">
+          <h2>Detalle</h2>
+          <span class="badge" id="detailStatus">Sin selección</span>
+        </div>
+
+        <div class="detail-block" id="detailBlock">
+          <div class="detail-grid">
+            <div><div class="label">Transacción</div><div class="value" id="detailTransaction">-</div></div>
+            <div><div class="label">Riesgo</div><div class="value" id="detailRisk">-</div></div>
+            <div><div class="label">Score</div><div class="value" id="detailScore">-</div></div>
+            <div><div class="label">Fraude</div><div class="value" id="detailFraud">-</div></div>
+          </div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">Reglas activadas</div>
+          <div class="chips" id="rulesChips"><span class="chip">Sin datos</span></div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">Evidencias</div>
+          <div class="evidence-list" id="evidenceList"><div class="status">Seleccione una transacción.</div></div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">Vista previa</div>
+          <div class="preview" id="previewPane">Seleccione una evidencia para verla aquí.</div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">Subir evidencia</div>
+          <form class="upload-form" id="uploadForm">
+            <input id="uploadTransactionId" type="text" placeholder="transactionId" required />
+            <input id="uploadFile" type="file" accept="application/pdf,image/png" required />
+            <button class="button primary" type="submit">Subir</button>
+            <div class="status" id="uploadStatus"></div>
+          </form>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      transactions: [],
+      selected: null,
+      previewUrl: null,
+    };
+
+    const els = {
+      summaryState: document.getElementById('summaryState'),
+      summaryTransactions: document.getElementById('summaryTransactions'),
+      summarySelected: document.getElementById('summarySelected'),
+      transactionsBody: document.getElementById('transactionsBody'),
+      tableBadge: document.getElementById('tableBadge'),
+      detailStatus: document.getElementById('detailStatus'),
+      detailTransaction: document.getElementById('detailTransaction'),
+      detailRisk: document.getElementById('detailRisk'),
+      detailScore: document.getElementById('detailScore'),
+      detailFraud: document.getElementById('detailFraud'),
+      rulesChips: document.getElementById('rulesChips'),
+      evidenceList: document.getElementById('evidenceList'),
+      previewPane: document.getElementById('previewPane'),
+      uploadForm: document.getElementById('uploadForm'),
+      uploadTransactionId: document.getElementById('uploadTransactionId'),
+      uploadFile: document.getElementById('uploadFile'),
+      uploadStatus: document.getElementById('uploadStatus'),
+      refreshButton: document.getElementById('refreshButton'),
+    };
+
+    els.refreshButton.addEventListener('click', loadTransactions);
+    els.uploadForm.addEventListener('submit', uploadEvidence);
+
+    loadTransactions();
+
+    async function loadTransactions() {
+      setSummary('Cargando...');
+      try {
+        const response = await fetch('/api/v1/transactions');
+        if (!response.ok) throw new Error('No se pudieron cargar las transacciones.');
+        state.transactions = await response.json();
+        renderTransactions();
+        setSummary(state.transactions.length ? 'Listo' : 'Sin registros');
+      } catch (error) {
+        setSummary('Error');
+        els.transactionsBody.innerHTML = `<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`;
+      }
+    }
+
+    function renderTransactions() {
+      els.summaryTransactions.textContent = String(state.transactions.length);
+      els.tableBadge.textContent = `${state.transactions.length} visibles`;
+      if (!state.transactions.length) {
+        els.transactionsBody.innerHTML = '<tr><td colspan="6">No hay transacciones todavía.</td></tr>';
+        return;
+      }
+
+      els.transactionsBody.innerHTML = state.transactions.map((tx) => `
+        <tr data-id="${escapeHtml(tx.transactionId)}">
+          <td><strong>${escapeHtml(tx.transactionId)}</strong></td>
+          <td>${escapeHtml(tx.accountId)}</td>
+          <td>${escapeHtml(formatMoney(tx.amount))}</td>
+          <td>${escapeHtml(tx.currency)}</td>
+          <td>${escapeHtml(formatDate(tx.ingestedAt))}</td>
+          <td>${escapeHtml(tx.merchantCategory)}</td>
+        </tr>
+      `).join('');
+
+      for (const row of els.transactionsBody.querySelectorAll('tr[data-id]')) {
+        row.addEventListener('click', () => selectTransaction(row.dataset.id));
+      }
+    }
+
+    async function selectTransaction(transactionId) {
+      state.selected = state.transactions.find((item) => item.transactionId === transactionId) || null;
+      els.summarySelected.textContent = transactionId;
+      els.uploadTransactionId.value = transactionId;
+      [...els.transactionsBody.querySelectorAll('tr')].forEach((row) => row.classList.toggle('active', row.dataset.id === transactionId));
+
+      if (!state.selected) return;
+
+      els.detailStatus.textContent = 'Cargando...';
+      els.detailTransaction.textContent = transactionId;
+      els.detailRisk.textContent = 'Cargando';
+      els.detailScore.textContent = 'Cargando';
+      els.detailFraud.textContent = 'Cargando';
+      els.rulesChips.innerHTML = '<span class="chip">Analizando</span>';
+      els.evidenceList.innerHTML = '<div class="status">Cargando evidencias...</div>';
+      setPreview(null, 'Seleccione una evidencia para verla aquí.');
+
+      try {
+        const [riskResponse, evidenceResponse] = await Promise.all([
+          fetch(`/api/v1/transactions/${encodeURIComponent(transactionId)}/riesgo`),
+          fetch(`/api/v1/transactions/${encodeURIComponent(transactionId)}/evidencias`)
+        ]);
+
+        if (!riskResponse.ok) throw new Error('No se pudo obtener el riesgo.');
+        if (!evidenceResponse.ok) throw new Error('No se pudieron obtener las evidencias.');
+
+        const risk = await riskResponse.json();
+        const evidences = await evidenceResponse.json();
+
+        renderRisk(risk);
+        renderEvidenceList(transactionId, evidences);
+        els.detailStatus.textContent = risk.scored ? 'Calculado' : 'Pendiente';
+      } catch (error) {
+        els.detailStatus.textContent = 'Error';
+        els.evidenceList.innerHTML = `<div class="status error">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    function renderRisk(risk) {
+      els.detailRisk.textContent = risk.scored ? 'Calculado' : 'Pendiente';
+      els.detailScore.textContent = risk.scored ? String(risk.score) : 'Aún no listo';
+      els.detailFraud.textContent = risk.fraudCase ? `${risk.fraudCase.status} / ${risk.fraudCase.caseId}` : 'No';
+      const activations = risk.activations && risk.activations.length ? risk.activations : [];
+      els.rulesChips.innerHTML = activations.length
+        ? activations.map((activation) => `<span class="chip">${escapeHtml(activation.ruleId)} · ${escapeHtml(String(activation.points))}</span>`).join('')
+        : '<span class="chip">Sin reglas activadas</span>';
+    }
+
+    function renderEvidenceList(transactionId, evidences) {
+      if (!evidences.length) {
+        els.evidenceList.innerHTML = '<div class="status">No hay evidencias para esta transacción.</div>';
+        return;
+      }
+
+      els.evidenceList.innerHTML = evidences.map((name) => `
+        <div class="evidence-item">
+          <div>
+            <div><strong>${escapeHtml(name)}</strong></div>
+            <div class="status">Proxy desde el backend privado</div>
+          </div>
+          <button class="button ghost" data-evidence="${escapeHtml(name)}">Ver</button>
+        </div>
+      `).join('');
+
+      for (const button of els.evidenceList.querySelectorAll('button[data-evidence]')) {
+        button.addEventListener('click', () => previewEvidence(transactionId, button.dataset.evidence));
+      }
+    }
+
+    async function previewEvidence(transactionId, blobName) {
+      try {
+        const response = await fetch(`/api/v1/transactions/${encodeURIComponent(transactionId)}/evidencias/${encodeURIComponent(blobName)}`);
+        if (!response.ok) throw new Error('No se pudo descargar la evidencia.');
+
+        const contentType = response.headers.get('content-type') || '';
+        const blob = await response.blob();
+        if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+        state.previewUrl = URL.createObjectURL(blob);
+
+        if (contentType.includes('image/png')) {
+          setPreview(`<img src="${state.previewUrl}" alt="${escapeHtml(blobName)}" />`);
+        } else {
+          setPreview(`<iframe src="${state.previewUrl}" title="${escapeHtml(blobName)}"></iframe>`);
+        }
+      } catch (error) {
+        setPreview(`<div class="status error">${escapeHtml(error.message)}</div>`);
+      }
+    }
+
+    function setPreview(html) {
+      els.previewPane.innerHTML = html || '<div class="status">Seleccione una evidencia para verla aquí.</div>';
+    }
+
+    async function uploadEvidence(event) {
+      event.preventDefault();
+      const transactionId = els.uploadTransactionId.value.trim();
+      const file = els.uploadFile.files[0];
+      if (!transactionId || !file) return;
+
+      els.uploadStatus.textContent = 'Subiendo...';
+      els.uploadStatus.classList.remove('error');
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`/api/v1/transactions/${encodeURIComponent(transactionId)}/evidencias`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const body = await response.text();
+          throw new Error(body || 'No se pudo subir la evidencia.');
+        }
+
+        els.uploadStatus.textContent = 'Evidencia subida correctamente.';
+        await selectTransaction(transactionId);
+      } catch (error) {
+        els.uploadStatus.textContent = error.message;
+        els.uploadStatus.classList.add('error');
+      }
+    }
+
+    function setSummary(value) {
+      els.summaryState.textContent = value;
+    }
+
+    function formatMoney(value) {
+      return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 }).format(value);
+    }
+
+    function formatDate(iso) {
+      return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+  </script>
+</body>
+</html>
