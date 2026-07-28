@@ -26,6 +26,13 @@ public class InMemoryTransactionRepository implements TransactionRepository {
     }
 
     @Override
+    public List<Transaction> findAll() {
+        return store.values().stream()
+                .sorted((left, right) -> right.ingestedAt().compareTo(left.ingestedAt()))
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    @Override
     public List<Transaction> findByAccountId(String accountId) {
         return store.values().stream()
                 .filter(transaction -> transaction.accountId().equals(accountId))
