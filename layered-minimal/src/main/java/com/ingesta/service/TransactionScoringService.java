@@ -1,5 +1,6 @@
 package com.ingesta.service;
 
+import com.ingesta.dto.RiesgoResponse;
 import com.ingesta.messaging.TransactionIngestedEvent;
 import com.ingesta.model.FraudCase;
 import com.ingesta.model.Transaction;
@@ -57,5 +58,11 @@ public class TransactionScoringService {
                     score.activations());
             fraudCaseRepository.save(fraudCase);
         }
+    }
+
+    public RiesgoResponse obtenerRiesgo(String transactionId) {
+        return scoreRepository.findByTransactionId(transactionId)
+                .map(score -> RiesgoResponse.of(score, fraudCaseRepository.findByTransactionId(transactionId)))
+                .orElseGet(() -> RiesgoResponse.pending(transactionId));
     }
 }

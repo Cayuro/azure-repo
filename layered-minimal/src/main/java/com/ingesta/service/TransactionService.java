@@ -59,6 +59,10 @@ public class TransactionService {
                 .orElseThrow(() -> new TransactionNotFoundException(transactionId));
     }
 
+    public List<Transaction> getAll() {
+        return repository.findAll();
+    }
+
     private void validate(TransactionRequest request) {
         List<String> errors = new ArrayList<>();
         if (request.occurredAt() != null && request.occurredAt().isAfter(Instant.now(clock))) {
