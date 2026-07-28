@@ -18,6 +18,8 @@ SKU="${SKU:-Standard_LRS}"
 CONTAINER_NAME="${CONTAINER_NAME:-evidencias-financieras-privado}"
 QUEUE_NAME="${QUEUE_NAME:-cola-transacciones-ingesta}"
 QUEUE_POISON_NAME="${QUEUE_POISON_NAME:-cola-transacciones-ingesta-poison}"
+FRAUD_QUEUE_NAME="${FRAUD_QUEUE_NAME:-cola-casos-fraude}"
+FRAUD_QUEUE_POISON_NAME="${FRAUD_QUEUE_POISON_NAME:-cola-casos-fraude-poison}"
 # ---------- 1. Verificar Resource Group ----------
 RG_LOCATION=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv 2>/dev/null || echo "$LOCATION")
 echo ">> Verificando Resource Group: $RESOURCE_GROUP (Ubicación RG: $RG_LOCATION)"
@@ -57,6 +59,20 @@ az storage queue create \
   --name "$QUEUE_POISON_NAME" \
   --auth-mode login \
   --output none
+# ---------- 4b. Cola de casos de fraude (principal + poison) ----------
+echo ">> Creando/Verificando cola de casos de fraude: $FRAUD_QUEUE_NAME..."
+az storage queue create \
+  --account-name "$STORAGE_ACCOUNT" \
+  --name "$FRAUD_QUEUE_NAME" \
+  --auth-mode login \
+  --output none
+
+echo ">> Creando/Verificando cola de poison messages: $FRAUD_QUEUE_POISON_NAME..."
+az storage queue create \
+  --account-name "$STORAGE_ACCOUNT" \
+  --name "$FRAUD_QUEUE_POISON_NAME" \
+  --auth-mode login \
+  --output none
 # ---------- 5. RBAC: Managed Identity del App Service sobre el Storage Account ----------
 PRINCIPAL_ID=$(az webapp identity show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query principalId -o tsv 2>/dev/null || echo "")
 STORAGE_ID=$(az storage account show --name "$STORAGE_ACCOUNT" --resource-group "$RESOURCE_GROUP" --query id -o tsv)
@@ -86,5 +102,7 @@ echo "Storage Account   : $STORAGE_ACCOUNT ($SKU, $LOCATION)"
 echo "Contenedor Blob   : $CONTAINER_NAME (privado, sin claves)"
 echo "Cola principal    : $QUEUE_NAME"
 echo "Cola poison       : $QUEUE_POISON_NAME"
+echo "Cola casos fraude : $FRAUD_QUEUE_NAME"
+echo "Cola poison fraude: $FRAUD_QUEUE_POISON_NAME"
 echo "Managed Identity  : ${PRINCIPAL_ID:-Pendiente (App Service sin identidad)}"
 echo "================================================================"
