@@ -2,13 +2,19 @@ package com.ingesta.service;
 
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.models.BlobProperties;
+import com.ingesta.dto.EvidenciaDescargada;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.StreamSupport;
 
 @Service
 public class EvidenciaService {
@@ -59,5 +65,45 @@ public class EvidenciaService {
         blobClient.upload(bufferedStream, fileSize, true);
 
         return safeBlobName;
+    }
+
+    public List<String> listEvidencias(String transactionId) {
+        String prefix = blobPrefix(transactionId);
+        return StreamSupport.stream(containerClient.listBlobs().spliterator(), false)
+                .map(BlobItem::getName)
+                .filter(blobName -> blobName.startsWith(prefix))
+                .sorted()
+                .toList();
+    }
+
+    public EvidenciaDescargada descargarEvidencia(String transactionId, String blobName) throws IOException {
+        validateBlobName(transactionId, blobName);
+
+        BlobClient blobClient = containerClient.getBlobClient(blobName);
+        if (!blobClient.exists()) {
+            throw new IllegalArgumentException("Evidencia no encontrada para la transaccion indicada.");
+        }
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        blobClient.downloadStream(outputStream);
+
+        BlobProperties properties = blobClient.getProperties();
+        String contentType = properties.getContentType();
+        if (contentType == null || contentType.isBlank()) {
+            contentType = blobName.toLowerCase().endsWith(".png") ? "image/png" : "application/pdf";
+        }
+
+        return new EvidenciaDescargada(blobName, contentType, outputStream.toByteArray());
+    }
+
+    private void validateBlobName(String transactionId, String blobName) {
+        String prefix = blobPrefix(transactionId);
+        if (blobName == null || !blobName.startsWith(prefix) || blobName.contains("/") || blobName.contains("\\") || blobName.contains("..")) {
+            throw new IllegalArgumentException("Nombre de evidencia invalido para la transaccion indicada.");
+        }
+    }
+
+    private String blobPrefix(String transactionId) {
+        return "tx_" + transactionId + "_";
     }
 }

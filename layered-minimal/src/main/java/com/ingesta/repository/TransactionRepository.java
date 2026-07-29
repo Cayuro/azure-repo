@@ -11,6 +11,8 @@ public interface TransactionRepository {
 
     Optional<Transaction> findById(String transactionId);
 
+    List<Transaction> findAll();
+
     List<Transaction> findByAccountId(String accountId);
 
     enum SaveOutcome {
