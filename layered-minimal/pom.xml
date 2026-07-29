@@ -51,6 +51,10 @@
 		</dependency>
 		<dependency>
 			<groupId>com.azure</groupId>
+			<artifactId>azure-ai-documentintelligence</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.azure</groupId>
 			<artifactId>azure-identity</artifactId>
 		</dependency>
 		<dependency>

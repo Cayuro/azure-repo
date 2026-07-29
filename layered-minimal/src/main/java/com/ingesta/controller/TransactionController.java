@@ -3,7 +3,10 @@ package com.ingesta.controller;
 import com.ingesta.dto.EvidenciaResponse;
 import com.ingesta.dto.TransactionRequest;
 import com.ingesta.dto.TransactionResponse;
+import com.ingesta.model.DatosDocumento;
 import com.ingesta.model.Transaction;
+import com.ingesta.repository.DatosDocumentoRepository;
+import com.ingesta.service.DocumentIntelligenceService;
 import com.ingesta.service.EvidenciaService;
 import com.ingesta.service.TransactionService;
 import jakarta.validation.Valid;
@@ -27,10 +30,18 @@ public class TransactionController {
 
     private final TransactionService service;
     private final EvidenciaService evidenciaService;
+    private final DocumentIntelligenceService documentIntelligenceService;
+    private final DatosDocumentoRepository datosDocumentoRepository;
 
-    public TransactionController(TransactionService service, EvidenciaService evidenciaService) {
+    public TransactionController(
+            TransactionService service,
+            EvidenciaService evidenciaService,
+            DocumentIntelligenceService documentIntelligenceService,
+            DatosDocumentoRepository datosDocumentoRepository) {
         this.service = service;
         this.evidenciaService = evidenciaService;
+        this.documentIntelligenceService = documentIntelligenceService;
+        this.datosDocumentoRepository = datosDocumentoRepository;
     }
 
     @PostMapping
@@ -53,6 +64,14 @@ public class TransactionController {
             @RequestParam("file") MultipartFile file) throws IOException {
         service.getById(transactionId);
         String blobName = evidenciaService.cargarEvidenciaSegura(transactionId, file.getInputStream(), file.getSize());
+        documentIntelligenceService.extraerYAdjuntar(transactionId, blobName);
         return ResponseEntity.status(HttpStatus.CREATED).body(new EvidenciaResponse(transactionId, blobName));
+    }
+
+    @GetMapping("/{transactionId}/datos-documento")
+    public ResponseEntity<DatosDocumento> getDatosDocumento(@PathVariable String transactionId) {
+        return datosDocumentoRepository.findByTransactionId(transactionId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }
