@@ -4,7 +4,10 @@ import com.ingesta.dto.EvidenciaResponse;
 import com.ingesta.dto.RiesgoResponse;
 import com.ingesta.dto.TransactionRequest;
 import com.ingesta.dto.TransactionResponse;
+import com.ingesta.model.DatosDocumento;
 import com.ingesta.model.Transaction;
+import com.ingesta.repository.DatosDocumentoRepository;
+import com.ingesta.service.DocumentIntelligenceService;
 import com.ingesta.service.EvidenciaService;
 import com.ingesta.service.TransactionScoringService;
 import com.ingesta.service.TransactionService;
@@ -34,11 +37,20 @@ public class TransactionController {
     private final TransactionService service;
     private final EvidenciaService evidenciaService;
     private final TransactionScoringService scoringService;
+    private final DocumentIntelligenceService documentIntelligenceService;
+    private final DatosDocumentoRepository datosDocumentoRepository;
 
-    public TransactionController(TransactionService service, EvidenciaService evidenciaService, TransactionScoringService scoringService) {
+    public TransactionController(
+            TransactionService service,
+            EvidenciaService evidenciaService,
+            TransactionScoringService scoringService,
+            DocumentIntelligenceService documentIntelligenceService,
+            DatosDocumentoRepository datosDocumentoRepository) {
         this.service = service;
         this.evidenciaService = evidenciaService;
         this.scoringService = scoringService;
+        this.documentIntelligenceService = documentIntelligenceService;
+        this.datosDocumentoRepository = datosDocumentoRepository;
     }
 
     @Operation(summary = "Recibe una transaccion")
@@ -84,6 +96,18 @@ public class TransactionController {
         return ResponseEntity.ok(scoringService.obtenerRiesgo(transactionId));
     }
 
+    @Operation(summary = "Consulta los datos estructurados extraidos de las evidencias de una transaccion")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Datos de documento devueltos"),
+            @ApiResponse(responseCode = "404", description = "Aun no hay datos extraidos para la transaccion")
+    })
+    @GetMapping("/{transactionId}/datos-documento")
+    public ResponseEntity<DatosDocumento> getDatosDocumento(@PathVariable String transactionId) {
+        return datosDocumentoRepository.findByTransactionId(transactionId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @Operation(summary = "Lista las evidencias de una transaccion")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Listado devuelto"),
@@ -117,6 +141,7 @@ public class TransactionController {
             @RequestParam("file") MultipartFile file) throws IOException {
         service.getById(transactionId);
         String blobName = evidenciaService.cargarEvidenciaSegura(transactionId, file.getInputStream(), file.getSize());
+        documentIntelligenceService.extraerYAdjuntar(transactionId, blobName);
         return ResponseEntity.status(HttpStatus.CREATED).body(new EvidenciaResponse(transactionId, blobName));
     }
 }

@@ -1,13 +1,10 @@
 package com.ingesta.service;
 
-import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobProperties;
 import com.ingesta.dto.EvidenciaDescargada;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -28,15 +25,8 @@ public class EvidenciaService {
 
     private final BlobContainerClient containerClient;
 
-    public EvidenciaService(
-            @Value("${azure.storage.account-name}") String accountName,
-            @Value("${azure.storage.container-name}") String containerName) {
-        // Conexion sin claves usando Identidad Gestionada / az login (RBAC de Azure)
-        this.containerClient = new BlobServiceClientBuilder()
-                .endpoint("https://" + accountName + ".blob.core.windows.net")
-                .credential(new DefaultAzureCredentialBuilder().build())
-                .buildClient()
-                .getBlobContainerClient(containerName);
+    public EvidenciaService(BlobContainerClient evidenciasContainerClient) {
+        this.containerClient = evidenciasContainerClient;
     }
 
     public String cargarEvidenciaSegura(String transactionId, InputStream fileStream, long fileSize) throws IOException {
