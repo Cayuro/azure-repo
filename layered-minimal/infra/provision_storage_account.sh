@@ -20,6 +20,8 @@ QUEUE_NAME="${QUEUE_NAME:-cola-transacciones-ingesta}"
 QUEUE_POISON_NAME="${QUEUE_POISON_NAME:-cola-transacciones-ingesta-poison}"
 FRAUD_QUEUE_NAME="${FRAUD_QUEUE_NAME:-cola-casos-fraude}"
 FRAUD_QUEUE_POISON_NAME="${FRAUD_QUEUE_POISON_NAME:-cola-casos-fraude-poison}"
+DOCUMENTOS_QUEUE_NAME="${DOCUMENTOS_QUEUE_NAME:-cola-notificaciones-documentos}"
+DOCUMENTOS_QUEUE_POISON_NAME="${DOCUMENTOS_QUEUE_POISON_NAME:-cola-notificaciones-documentos-poison}"
 # ---------- 1. Verificar Resource Group ----------
 RG_LOCATION=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv 2>/dev/null || echo "$LOCATION")
 echo ">> Verificando Resource Group: $RESOURCE_GROUP (Ubicación RG: $RG_LOCATION)"
@@ -73,6 +75,20 @@ az storage queue create \
   --name "$FRAUD_QUEUE_POISON_NAME" \
   --auth-mode login \
   --output none
+# ---------- 4c. Cola de notificaciones de reconocimiento documental (principal + poison) ----------
+echo ">> Creando/Verificando cola de notificaciones de documentos: $DOCUMENTOS_QUEUE_NAME..."
+az storage queue create \
+  --account-name "$STORAGE_ACCOUNT" \
+  --name "$DOCUMENTOS_QUEUE_NAME" \
+  --auth-mode login \
+  --output none
+
+echo ">> Creando/Verificando cola de poison messages: $DOCUMENTOS_QUEUE_POISON_NAME..."
+az storage queue create \
+  --account-name "$STORAGE_ACCOUNT" \
+  --name "$DOCUMENTOS_QUEUE_POISON_NAME" \
+  --auth-mode login \
+  --output none
 # ---------- 5. RBAC: Managed Identity del App Service sobre el Storage Account ----------
 PRINCIPAL_ID=$(az webapp identity show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query principalId -o tsv 2>/dev/null || echo "")
 STORAGE_ID=$(az storage account show --name "$STORAGE_ACCOUNT" --resource-group "$RESOURCE_GROUP" --query id -o tsv)
@@ -104,5 +120,7 @@ echo "Cola principal    : $QUEUE_NAME"
 echo "Cola poison       : $QUEUE_POISON_NAME"
 echo "Cola casos fraude : $FRAUD_QUEUE_NAME"
 echo "Cola poison fraude: $FRAUD_QUEUE_POISON_NAME"
+echo "Cola notif. docs. : $DOCUMENTOS_QUEUE_NAME"
+echo "Cola poison docs. : $DOCUMENTOS_QUEUE_POISON_NAME"
 echo "Managed Identity  : ${PRINCIPAL_ID:-Pendiente (App Service sin identidad)}"
 echo "================================================================"

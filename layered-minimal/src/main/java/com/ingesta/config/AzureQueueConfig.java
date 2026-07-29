@@ -33,4 +33,16 @@ public class AzureQueueConfig {
                 .credential(new DefaultAzureCredentialBuilder().build())
                 .buildClient();
     }
+
+    @Bean
+    public QueueClient notificacionesDocumentosQueueClient(
+            @Value("${azure.storage.account-name}") String accountName,
+            @Value("${azure.storage.documentos-queue-name}") String queueName) {
+        // Conexion sin claves usando Identidad Gestionada / az login (RBAC de Azure)
+        return new QueueClientBuilder()
+                .endpoint("https://" + accountName + ".queue.core.windows.net")
+                .queueName(queueName)
+                .credential(new DefaultAzureCredentialBuilder().build())
+                .buildClient();
+    }
 }
