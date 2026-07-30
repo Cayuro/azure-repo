@@ -19,9 +19,9 @@ public class AzureQueueDocumentoProcesadoEventPublisher implements DocumentoProc
     private final ObjectMapper objectMapper;
 
     public AzureQueueDocumentoProcesadoEventPublisher(
-            @Qualifier("notificacionesDocumentosQueueClient") QueueClient notificacionesDocumentosQueueClient,
+            @Qualifier("ingestaQueueClient") QueueClient ingestaQueueClient,
             ObjectMapper objectMapper) {
-        this.queueClient = notificacionesDocumentosQueueClient;
+        this.queueClient = ingestaQueueClient;
         this.objectMapper = objectMapper;
     }
 
@@ -31,6 +31,11 @@ public class AzureQueueDocumentoProcesadoEventPublisher implements DocumentoProc
      * necesidad de que el analista este mirando activamente la API. Se ejecuta en
      * un hilo aparte y nunca propaga fallos: un problema al notificar no debe volver
      * a interrumpir el flujo que ya estamos protegiendo con este mecanismo.
+     *
+     * Reutiliza cola-transacciones-ingesta en vez de una cola dedicada: ambos son
+     * eventos de notificacion best-effort del mismo nivel de criticidad (a diferencia
+     * de cola-casos-fraude, que es una cola de trabajo con garantia dura de entrega),
+     * se distinguen por el campo eventType del envelope. Ver docs/justificacion-eventos-vs-colas.md.
      */
     @Override
     @Async("eventoIngestaExecutor")
