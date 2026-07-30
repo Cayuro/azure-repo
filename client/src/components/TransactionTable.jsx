@@ -1,9 +1,6 @@
 import { formatCurrency, formatDateTime, maskIdentifier } from '../utils/formatters';
-import { useNavigate } from 'react-router-dom';
 
 function TransactionTable({ transactions, selectedId, loading, error, onSelect, risksById = {} }) {
-  const navigate = useNavigate();
-
   function getRiskClass(score) {
     const value = Number(score) || 0;
     if (value >= 70) return 'score-high';
@@ -58,13 +55,25 @@ function TransactionTable({ transactions, selectedId, loading, error, onSelect, 
               const riskLabel = score == null ? '—' : getRiskLabel(score);
 
               return (
-                <tr key={tx.transactionId} className={selectedId === tx.transactionId ? 'selected' : ''}>
+                <tr
+                  key={tx.transactionId}
+                  className={selectedId === tx.transactionId ? 'selected' : ''}
+                  onClick={() => onSelect?.(tx.transactionId)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onSelect?.(tx.transactionId);
+                    }
+                  }}
+                  tabIndex={0}
+                >
                   <td>
                     <button
+                      type="button"
                       className="link-button"
-                      onClick={() => {
+                      onClick={(event) => {
+                        event.stopPropagation();
                         onSelect?.(tx.transactionId);
-                        navigate(`/transactions/${tx.transactionId}`);
                       }}
                     >
                       {maskIdentifier(tx.transactionId)}

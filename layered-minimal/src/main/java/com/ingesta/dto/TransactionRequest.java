@@ -1,15 +1,15 @@
 package com.ingesta.dto;
 
+import java.math.BigDecimal;
+
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.math.BigDecimal;
-
 public record TransactionRequest(
-        @NotBlank String transactionId,
+        String transactionId,
         @NotBlank String accountId,
         @NotNull @DecimalMin(value = "0.01") @DecimalMax(value = "999999999999.99") BigDecimal amount,
         @NotBlank @Size(min = 3, max = 3) String currency,

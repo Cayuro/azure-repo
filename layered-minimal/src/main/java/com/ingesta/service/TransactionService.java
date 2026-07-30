@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ public class TransactionService {
     private final TransactionEventPublisher eventPublisher;
     private final IngestaQueueEventPublisher ingestaQueueEventPublisher;
     private final Clock clock;
+    private final AtomicLong transactionSequence = new AtomicLong();
 
     public TransactionService(
             TransactionRepository repository,
@@ -37,9 +39,13 @@ public class TransactionService {
     public TransactionResponse ingest(TransactionRequest request) {
         validate(request);
 
+        String transactionId = request.transactionId() == null || request.transactionId().isBlank()
+                ? generateTransactionId()
+                : request.transactionId();
+
         Instant now = Instant.now(clock);
         Transaction transaction = new Transaction(
-                request.transactionId(),
+                transactionId,
                 request.accountId(),
                 request.amount(),
                 request.currency().toUpperCase(),
@@ -60,6 +66,10 @@ public class TransactionService {
         eventPublisher.publish(transaction);
         ingestaQueueEventPublisher.publicarTransaccionIngestada(transaction);
         return new TransactionResponse(transaction.transactionId(), "RECIBIDA", transaction.ingestedAt());
+    }
+
+    private String generateTransactionId() {
+        return "TXN-" + transactionSequence.incrementAndGet();
     }
 
     public Transaction getById(String transactionId) {

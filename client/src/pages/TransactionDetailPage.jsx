@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import TransactionDetailCard from '../components/TransactionDetailCard';
-import EvidenceUploader from '../components/EvidenceUploader';
 import { downloadEvidence, getErrorMessage, getTransaction, getTransactionEvidenceList, getTransactionRisk, updateTransactionStatus } from '../services/api';
 
 function TransactionDetailPage() {
@@ -84,18 +83,16 @@ function TransactionDetailPage() {
       {loading ? <div className="panel">Cargando transacción...</div> : null}
       {error ? <div className="panel error">{error}</div> : null}
       {!loading && !error ? (
-        <>
-          <TransactionDetailCard
-            transaction={transaction}
-            risk={risk}
-            evidences={evidences}
-            onPreview={handlePreviewEvidence}
-            onStatusSave={handleStatusSave}
-            statusSaving={statusSaving}
-            statusError={statusError}
-          />
-          <EvidenceUploader transactionId={transactionId} onUploadSuccess={handleUploadSuccess} />
-        </>
+        <TransactionDetailCard
+          transaction={transaction}
+          risk={risk}
+          evidences={evidences}
+          onPreview={handlePreviewEvidence}
+          onStatusSave={handleStatusSave}
+          onUploadSuccess={handleUploadSuccess}
+          statusSaving={statusSaving}
+          statusError={statusError}
+        />
       ) : null}
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { formatCurrency, formatDateTime, maskIdentifier } from '../utils/formatters';
 import ScoreBar from './ScoreBar';
+import EvidenceUploader from './EvidenceUploader';
 
 const STATUS_OPTIONS = [
   { value: 'ABIERTO', label: 'Abierto' },
@@ -10,7 +11,7 @@ const STATUS_OPTIONS = [
   { value: 'PENDIENTE', label: 'Pendiente' }
 ];
 
-function TransactionDetailCard({ transaction, risk, evidences, onPreview, onStatusSave, statusSaving, statusError }) {
+function TransactionDetailCard({ transaction, risk, evidences, onPreview, onStatusSave, onUploadSuccess, statusSaving, statusError }) {
   const [selectedStatus, setSelectedStatus] = useState('');
 
   useEffect(() => {
@@ -86,6 +87,10 @@ function TransactionDetailCard({ transaction, risk, evidences, onPreview, onStat
               ))}
             </div>
           </div>
+
+          {transaction?.transactionId ? (
+            <EvidenceUploader transactionId={transaction.transactionId} onUploadSuccess={onUploadSuccess} />
+          ) : null}
         </div>
 
         <aside className="detail-right">

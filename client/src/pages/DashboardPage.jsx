@@ -110,6 +110,16 @@ function DashboardPage() {
     }
   }
 
+  const handleUploadSuccess = async () => {
+    if (!selectedId) return;
+    try {
+      const evidenceResult = await getTransactionEvidenceList(selectedId);
+      setEvidences(Array.isArray(evidenceResult) ? evidenceResult : []);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  };
+
   return (
     <div className="page-stack">
       <section className="hero-card">
@@ -143,6 +153,7 @@ function DashboardPage() {
             evidences={evidences}
             onPreview={handlePreviewEvidence}
             onStatusSave={handleStatusSave}
+            onUploadSuccess={handleUploadSuccess}
             statusSaving={statusSaving}
           />
         )}

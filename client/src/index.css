@@ -44,13 +44,15 @@ button, input, select { font: inherit; }
 .pill, .chip, .chip-inline { display: inline-flex; align-items: center; padding: 7px 10px; border-radius: 999px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.05); color: #e8eefc; }
 .transaction-score-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; background: rgba(255,255,255,0.08); color: #e8eefc; }
 .transaction-score-pill .score-value { font-weight: 800; }
-.transaction-score-pill.score-high { background: rgba(52, 211, 153, 0.16); color: #a7f3d0; }
+.transaction-score-pill.score-high { background: rgba(251, 113, 133, 0.16); color: #fecdd3; }
 .transaction-score-pill.score-medium { background: rgba(245, 158, 11, 0.16); color: #fde68a; }
-.transaction-score-pill.score-low { background: rgba(251, 113, 133, 0.16); color: #fecdd3; }
+.transaction-score-pill.score-low { background: rgba(52, 211, 153, 0.16); color: #a7f3d0; }
 .transaction-score-pill.neutral { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); }
 .table-shell { overflow: auto; }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th, .data-table td { padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left; }
+.data-table tbody tr { cursor: pointer; }
+.data-table tbody tr:hover { background: rgba(255,255,255,0.04); }
 .data-table tr.selected { background: rgba(91,124,255,0.12); }
 .link-button { background: none; color: #7fb4ff; border: none; padding: 0; cursor: pointer; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
@@ -256,9 +258,9 @@ input:focus, select:focus { outline: 2px solid rgba(91,124,255,0.35); border-col
 .score-meta { color: rgba(255,255,255,0.6); font-weight:600; }
 .score-bar { height:14px; background: rgba(255,255,255,0.03); border-radius:999px; overflow:visible; width:100%; position:relative; margin-top:6px; }
 .score-fill { height:100%; transition: width 900ms cubic-bezier(.2,.9,.2,1); box-shadow: inset 0 -2px 8px rgba(0,0,0,0.35); border-radius:999px; position:relative; }
-.score-fill.score-high { background: linear-gradient(90deg,#34d399,#10b981); }
+.score-fill.score-high { background: linear-gradient(90deg,#fb7185,#ef4444); }
 .score-fill.score-medium { background: linear-gradient(90deg,#ffd8a8,#f59e0b); }
-.score-fill.score-low { background: linear-gradient(90deg,#ffdbe0,#fb7185); }
+.score-fill.score-low { background: linear-gradient(90deg,#86efac,#22c55e); }
 
 /* Gauge styles */
 .score-gauge { position:relative; display:flex; align-items:center; justify-content:center; }
@@ -270,9 +272,9 @@ input:focus, select:focus { outline: 2px solid rgba(91,124,255,0.35); border-col
 .gauge-track { opacity:0.22; }
 .gauge-fill { transition: stroke-dashoffset 900ms cubic-bezier(.2,.9,.2,1); filter: drop-shadow(0 6px 18px rgba(2,6,23,0.45)); }
 
-.score-high .gauge-fill { stroke: #34d399; }
+.score-high .gauge-fill { stroke: #fb7185; }
 .score-medium .gauge-fill { stroke: #f59e0b; }
-.score-low .gauge-fill { stroke: #fb7185; }
+.score-low .gauge-fill { stroke: #34d399; }
 .score-glow { display:none; }
 .score-circle.score-high,
 .score-circle.score-medium,
@@ -286,10 +288,10 @@ input:focus, select:focus { outline: 2px solid rgba(91,124,255,0.35); border-col
 .score-high .score-glow { background: linear-gradient(90deg,#86efac,#10b981); }
 .score-medium .score-glow { background: linear-gradient(90deg,#ffd8a8,#fb923c); }
 .score-low .score-glow { background: linear-gradient(90deg,#ffdbe0,#fb7185); }
-.score-high .score-number { color:#064e3b; }
+.score-high .score-number { color:#7f1d1d; }
 .score-medium .score-number { color:#7c2d12; }
-.score-low .score-number { color:#610b0b; }
-.score-high .score-pill { background: linear-gradient(90deg,#fff7f9,#ffdbe0); color:#164029; }
+.score-low .score-number { color:#064e3b; }
+.score-high .score-pill { background: linear-gradient(90deg,#fff1f2,#fecdd3); color:#7f1d1d; }
 .score-medium .score-pill { background: linear-gradient(90deg,#fffaf0,#ffefdc); color:#7c2d12; }
-.score-low .score-pill { background: linear-gradient(90deg,#fff5f6,#ffe7ec); color:#6b0b0b; }
+.score-low .score-pill { background: linear-gradient(90deg,#ecfdf5,#bbf7d0); color:#0f766e; }
 

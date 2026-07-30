@@ -14,9 +14,9 @@ function ScoreBar({ score = 0, size = 160 }) {
   const dashOffset = halfCirc * (1 - pct / 100);
 
   const levelColors = {
-    high: '#34d399',
+    high: '#fb7185',
     medium: '#f59e0b',
-    low: '#fb7185',
+    low: '#34d399',
   };
 
   return (

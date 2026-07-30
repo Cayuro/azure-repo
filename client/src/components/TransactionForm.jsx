@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { createTransaction, getErrorMessage } from '../services/api';
 
 const initialState = {
-  transactionId: 'TXN-1001',
   accountId: 'ACC-1001',
   amount: '2500',
   currency: 'COP',
@@ -13,7 +12,6 @@ const initialState = {
   merchantCategory: 'GAMBLING'
 };
 
-const transactionOptions = ['TXN-1001', 'TXN-1002', 'TXN-1003', 'TXN-1004'];
 const accountOptions = ['ACC-1001', 'ACC-1002', 'ACC-1003', 'ACC-1004'];
 const merchantOptions = ['MER-1001', 'MER-1002', 'MER-1003', 'MER-1004'];
 const merchantCategories = ['GAMBLING', 'CRYPTO', 'ADULT', 'RETAIL', 'TRAVEL'];
@@ -25,7 +23,7 @@ function TransactionForm() {
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
-  const helperText = useMemo(() => 'Seleccione identificadores desde la lista protegida para evitar exponer datos sensibles.', []);
+  const helperText = useMemo(() => 'El identificador de transacción se genera automáticamente en el backend.', []);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -40,7 +38,6 @@ function TransactionForm() {
 
     try {
       const payload = {
-        transactionId: form.transactionId,
         accountId: form.accountId,
         amount: Number(form.amount),
         currency: form.currency,
@@ -72,12 +69,6 @@ function TransactionForm() {
       <p className="helper-text">{helperText}</p>
 
       <div className="form-grid">
-        <label>
-          transactionId
-          <select name="transactionId" value={form.transactionId} onChange={handleChange}>
-            {transactionOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-          </select>
-        </label>
         <label>
           accountId
           <select name="accountId" value={form.accountId} onChange={handleChange}>
