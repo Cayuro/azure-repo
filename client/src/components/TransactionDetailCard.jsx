@@ -1,11 +1,33 @@
+import { useEffect, useState } from 'react';
 import { formatCurrency, formatDateTime, maskIdentifier } from '../utils/formatters';
 import ScoreBar from './ScoreBar';
 
-function TransactionDetailCard({ transaction, risk, evidences, onPreview }) {
+const STATUS_OPTIONS = [
+  { value: 'ABIERTO', label: 'Abierto' },
+  { value: 'EN_REVISION', label: 'En revisión' },
+  { value: 'REVISADO', label: 'Revisado' },
+  { value: 'CERRADO', label: 'Cerrado' },
+  { value: 'PENDIENTE', label: 'Pendiente' }
+];
+
+function TransactionDetailCard({ transaction, risk, evidences, onPreview, onStatusSave, statusSaving, statusError }) {
+  const [selectedStatus, setSelectedStatus] = useState('');
+
+  useEffect(() => {
+    setSelectedStatus(risk?.fraudCase?.status || '');
+  }, [risk?.fraudCase?.status]);
+
   if (!transaction) return <div className="panel">Selecciona una transacción para ver detalles.</div>;
 
   const score = risk?.score ?? 0;
   const activations = Array.isArray(risk?.activations) ? risk.activations : [];
+  const fraudCase = risk?.fraudCase;
+  const hasFraudCase = Boolean(fraudCase && fraudCase.caseId);
+
+  const handleSaveStatus = async () => {
+    if (!onStatusSave || !selectedStatus || selectedStatus === fraudCase?.status) return;
+    await onStatusSave(selectedStatus);
+  };
 
   return (
     <div className="panel detail-panel enhanced-panel">
@@ -14,9 +36,14 @@ function TransactionDetailCard({ transaction, risk, evidences, onPreview }) {
           <p className="eyebrow">Detalle</p>
           <h2>{maskIdentifier(transaction.transactionId)}</h2>
           <div className="muted small">{transaction.merchantCategory} · {maskIdentifier(transaction.accountId)}</div>
+          <div className="muted small">Estado caso: {fraudCase?.status ?? 'No aplica'}</div>
         </div>
         <div className="detail-actions">
-          <button className="primary-button">Marcar como revisado</button>
+          {hasFraudCase ? (
+            <button className="primary-button" onClick={handleSaveStatus} disabled={statusSaving || !selectedStatus || selectedStatus === fraudCase.status}>
+              {statusSaving ? 'Guardando...' : 'Guardar estado'}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -66,6 +93,28 @@ function TransactionDetailCard({ transaction, risk, evidences, onPreview }) {
             <h3>Riesgo</h3>
             <ScoreBar score={score} />
             <p className="muted small">{risk?.scored ? `Evaluado • ${activations.length} reglas` : 'Pendiente de evaluación'}</p>
+
+            {hasFraudCase ? (
+              <div className="panel-section status-section">
+                <h4>Estado del caso</h4>
+                <p className="small">Caso ID: {maskIdentifier(fraudCase.caseId)}</p>
+                <p className="small">Abierto: {formatDateTime(fraudCase.openedAt)}</p>
+                <label>
+                  <span>Status</span>
+                  <select
+                    value={selectedStatus}
+                    onChange={(event) => setSelectedStatus(event.target.value)}
+                    disabled={!hasFraudCase}
+                  >
+                    <option value="">Selecciona un estado</option>
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+                {statusError ? <div className="panel-message error">{statusError}</div> : null}
+              </div>
+            ) : null}
 
             {activations.length > 0 && (
               <div className="rule-list">

@@ -7,7 +7,6 @@ const initialState = {
   accountId: 'ACC-1001',
   amount: '2500',
   currency: 'COP',
-  occurredAt: '',
   latitude: '4.7110',
   longitude: '-74.0721',
   merchantId: 'MER-1001',
@@ -45,7 +44,6 @@ function TransactionForm() {
         accountId: form.accountId,
         amount: Number(form.amount),
         currency: form.currency,
-        occurredAt: new Date(form.occurredAt).toISOString(),
         latitude: Number(form.latitude),
         longitude: Number(form.longitude),
         merchantId: form.merchantId,
@@ -97,10 +95,6 @@ function TransactionForm() {
             <option value="USD">USD</option>
             <option value="EUR">EUR</option>
           </select>
-        </label>
-        <label>
-          occurredAt
-          <input name="occurredAt" type="datetime-local" value={form.occurredAt} onChange={handleChange} required />
         </label>
         <label>
           latitude

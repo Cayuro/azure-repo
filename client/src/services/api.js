@@ -50,6 +50,15 @@ export async function getTransactionEvidenceList(transactionId) {
   return parseResponse(response);
 }
 
+export async function updateTransactionStatus(transactionId, status) {
+  const response = await fetch(`${API_BASE}/${encodeURIComponent(transactionId)}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  return parseResponse(response);
+}
+
 export async function downloadEvidence(transactionId, blobName) {
   const response = await fetch(`${API_BASE}/${encodeURIComponent(transactionId)}/evidencias/${encodeURIComponent(blobName)}`);
   if (!response.ok) {

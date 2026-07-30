@@ -45,6 +45,7 @@ function TransactionTable({ transactions, selectedId, loading, error, onSelect, 
               <th>Monto</th>
               <th>Fecha</th>
               <th>Scoring</th>
+              <th>Estado</th>
               <th>Comercio</th>
             </tr>
           </thead>
@@ -52,6 +53,7 @@ function TransactionTable({ transactions, selectedId, loading, error, onSelect, 
             {transactions.map((tx) => {
               const risk = risksById?.[tx.transactionId];
               const score = risk?.score ?? null;
+              const status = risk?.fraudCase?.status || '—';
               const riskClass = score == null ? 'neutral' : getRiskClass(score);
               const riskLabel = score == null ? '—' : getRiskLabel(score);
 
@@ -77,6 +79,7 @@ function TransactionTable({ transactions, selectedId, loading, error, onSelect, 
                       <span className="score-label">{riskLabel}</span>
                     </span>
                   </td>
+                  <td>{status}</td>
                   <td>{tx.merchantCategory}</td>
                 </tr>
               );

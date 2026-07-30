@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import StatCard from '../components/StatCard';
 import TransactionTable from '../components/TransactionTable';
 import TransactionDetailCard from '../components/TransactionDetailCard';
-import { downloadEvidence, getAllTransactionScores, getErrorMessage, getTransaction, getTransactionEvidenceList, getTransactionRisk, getTransactions } from '../services/api';
+import { downloadEvidence, getAllTransactionScores, getErrorMessage, getTransaction, getTransactionEvidenceList, getTransactionRisk, getTransactions, updateTransactionStatus } from '../services/api';
 
 function DashboardPage() {
   const [transactions, setTransactions] = useState([]);
@@ -13,6 +13,7 @@ function DashboardPage() {
   const [evidences, setEvidences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -50,13 +51,6 @@ function DashboardPage() {
       return;
     }
 
-    const cachedRisk = risksById[selectedId];
-    if (cachedRisk) {
-      setRisk(cachedRisk);
-      setDetailLoading(false);
-      return;
-    }
-
     async function loadDetails() {
       try {
         setDetailLoading(true);
@@ -81,7 +75,21 @@ function DashboardPage() {
     }
 
     loadDetails();
-  }, [selectedId, risksById]);
+  }, [selectedId]);
+
+  async function handleStatusSave(status) {
+    try {
+      setStatusSaving(true);
+      const updatedRisk = await updateTransactionStatus(selectedId, status);
+      setRisk(updatedRisk);
+      setRisksById((prev) => ({ ...prev, [selectedId]: updatedRisk }));
+    } catch (err) {
+      setError(getErrorMessage(err));
+      throw err;
+    } finally {
+      setStatusSaving(false);
+    }
+  }
 
   const summary = useMemo(() => ({
     total: transactions.length,
@@ -134,6 +142,8 @@ function DashboardPage() {
             risk={risk}
             evidences={evidences}
             onPreview={handlePreviewEvidence}
+            onStatusSave={handleStatusSave}
+            statusSaving={statusSaving}
           />
         )}
       </section>
