@@ -43,14 +43,16 @@ public class TransactionService {
                 ? generateTransactionId()
                 : request.transactionId();
 
-        Instant now = Instant.now(clock);
+        Instant ingestedAt = Instant.now(clock);
+        Instant occurredAt = (request.occurredAt() != null) ? request.occurredAt() : ingestedAt;
+
         Transaction transaction = new Transaction(
                 transactionId,
                 request.accountId(),
                 request.amount(),
                 request.currency().toUpperCase(),
-                now,
-                now,
+                occurredAt,
+                ingestedAt,
                 request.latitude(),
                 request.longitude(),
                 request.merchantId(),

@@ -17,6 +17,8 @@ import com.ingesta.model.TransactionScore;
 import com.ingesta.repository.FraudCaseRepository;
 import com.ingesta.repository.TransactionRepository;
 import com.ingesta.repository.TransactionScoreRepository;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class TransactionScoringService {
@@ -27,6 +29,11 @@ public class TransactionScoringService {
     private final TransactionScoringEngine scoringEngine;
     private final FraudCaseEventPublisher fraudCaseEventPublisher;
     private final Clock clock;
+
+    // Guarda atomica: evita que el evento in-process y el poller de la cola procesen la
+    // misma transaccion en paralelo (el check-then-act sobre scoreRepository no es atomico
+    // por si solo, y ambos caminos pueden dispararse practicamente al mismo tiempo).
+    private final Set<String> transaccionesEnProceso = ConcurrentHashMap.newKeySet();
 
     public TransactionScoringService(
             TransactionRepository transactionRepository,
@@ -43,26 +50,54 @@ public class TransactionScoringService {
         this.clock = clock;
     }
 
+    /**
+     * Disparo en proceso (evento de Spring in-memory): mismo camino de siempre, para
+     * baja latencia mientras la misma instancia sigue viva.
+     */
     @EventListener
     public void onTransactionIngested(TransactionIngestedEvent event) {
-        Transaction transaction = event.transaction();
-        List<Transaction> history = transactionRepository.findByAccountId(transaction.accountId()).stream()
-                .filter(item -> !item.transactionId().equals(transaction.transactionId()))
-                .toList();
+        procesarTransaccion(event.transaction());
+    }
 
-        TransactionScore score = scoringEngine.score(transaction, history);
-        scoreRepository.save(score);
+    /**
+     * Calcula el score y abre el caso de fraude si corresponde. Idempotente: si la
+     * transaccion ya fue procesada (por el evento in-process o por un intento anterior
+     * de {@code TransactionQueuePoller}), no se reprocesa. Esto permite que ambos
+     * caminos (evento in-process y el consumidor real de cola-transacciones-ingesta)
+     * disparen este metodo sin generar scores/casos duplicados, y que un mensaje
+     * reentregado tras un crash a mitad de proceso (semantica at-least-once) se procese
+     * como no-op en vez de duplicar el efecto.
+     */
+    public void procesarTransaccion(Transaction transaction) {
+        String transactionId = transaction.transactionId();
+        if (scoreRepository.findByTransactionId(transactionId).isPresent()) {
+            return;
+        }
+        if (!transaccionesEnProceso.add(transactionId)) {
+            return; // otro hilo (evento in-process o poller) ya esta procesando esta transaccion
+        }
 
-        if (score.score() > score.threshold()) {
-            FraudCase fraudCase = new FraudCase(
-                    UUID.randomUUID().toString(),
-                    transaction.transactionId(),
-                    score.score(),
-                    "ABIERTO",
-                    Instant.now(clock),
-                    score.activations());
-            fraudCaseRepository.save(fraudCase);
-            fraudCaseEventPublisher.publicarCasoFraude(fraudCase);
+        try {
+            List<Transaction> history = transactionRepository.findByAccountId(transaction.accountId()).stream()
+                    .filter(item -> !item.transactionId().equals(transactionId))
+                    .toList();
+
+            TransactionScore score = scoringEngine.score(transaction, history);
+            scoreRepository.save(score);
+
+            if (score.score() > score.threshold()) {
+                FraudCase fraudCase = new FraudCase(
+                        UUID.randomUUID().toString(),
+                        transactionId,
+                        score.score(),
+                        "ABIERTO",
+                        Instant.now(clock),
+                        score.activations());
+                fraudCaseRepository.save(fraudCase);
+                fraudCaseEventPublisher.publicarCasoFraude(fraudCase);
+            }
+        } finally {
+            transaccionesEnProceso.remove(transactionId);
         }
     }
 

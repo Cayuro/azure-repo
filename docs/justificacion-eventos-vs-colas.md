@@ -51,3 +51,15 @@ generico unico.
 En resumen: misma tecnologia (Azure Storage Queue), pero un rol de **notificacion**
 (fire-and-forget, para desacoplar y ganar latencia) y un rol de **cola de trabajo
 durable** (garantia dura de entrega) no deben resolverse con el mismo mecanismo.
+
+## Nota: notificacion del resultado del reconocimiento documental
+
+La notificacion al equipo analitico del resultado (exito o fallo) del reconocimiento
+documental de una evidencia (ver `AzureQueueDocumentoProcesadoEventPublisher`) **si**
+reutiliza `cola-transacciones-ingesta`, distinguiendose por el campo `eventType` del
+envelope (`TRANSACCION_INGESTADA` vs `DOCUMENTO_PROCESADO`). A diferencia de
+`cola-casos-fraude`, esta notificacion es tambien best-effort e informativa (el
+documento ya quedo persistido de forma consultable en el repositorio antes de
+notificar), asi que comparte el mismo nivel de criticidad que la notificacion de
+ingesta -no el de una cola de trabajo con garantia dura- y no amerita una cola
+dedicada ni la infraestructura/whitelisting adicional que eso implicaria.

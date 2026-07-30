@@ -30,8 +30,17 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+			<!-- BOM de Spring Cloud Azure — gestiona versiones de Cosmos DB, Storage, etc. -->
+			<dependency>
+				<groupId>com.azure.spring</groupId>
+				<artifactId>spring-cloud-azure-dependencies</artifactId>
+				<version>5.14.0</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
+
 
 	<dependencies>
 		<dependency>
@@ -71,6 +80,28 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>2.5.0</version>
 		</dependency>
+
+		<!-- ===== Cosmos DB (transacciones y scores) ===== -->
+		<dependency>
+			<groupId>com.azure.spring</groupId>
+			<artifactId>spring-cloud-azure-starter-data-cosmos</artifactId>
+		</dependency>
+
+		<!-- Jackson JSR-310 (serialización de Instant/LocalDate en JSON y Cosmos) -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
+		</dependency>
+
+		<!-- ===== Application Insights =====
+		     Se instrumenta mediante el agente Java de Azure Application Insights.
+		     El App Service lo inyecta automáticamente cuando se configura la App Setting:
+		       APPLICATIONINSIGHTS_CONNECTION_STRING = <connection-string-del-recurso-app-centinela-prod>
+		     No requiere dependencia Maven. La TelemetryClient se obtiene via SDK si se necesitan
+		     métricas custom (se agrega en el paso 6 del plan).
+		     Referencia: https://learn.microsoft.com/azure/azure-monitor/app/java-spring-boot -->
+
+		<!-- ===== Tests ===== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -87,6 +118,7 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
 
 	<build>
 		<plugins>
