@@ -1,0 +1,96 @@
+FraudAlertEvent DTO
+
+    package com.company.emailsender.dto;
+
+    import java.math.BigDecimal;
+    import java.time.Instant;
+    import java.util.List;
+
+    public record FraudAlertEvent(
+        String transactionId,
+        String accountId,
+        BigDecimal amount,
+        String currency,
+        Instant occurredAt,
+        Instant ingestedAt,
+        Double latitude,
+        Double longitude,
+        String merchantId,
+        String merchantCategory,
+        int score,
+        int threshold,
+        Instant scoredAt,
+        List<RuleActivation> activations
+    ) {}
+
+Arquitectura
+
+App Service (Spring Boot) | | Calcula el score | | score >= threshold ?
+| +–> Publica FraudAlertEvent en Azure Storage Queue | | Queue Trigger v
+Azure Function (Java) | | Construye asunto + HTML | v Azure
+Communication Services | v Envía el correo
+
+Responsabilidades
+
+1.  App Service
+
+-   Calcula el score.
+-   Si supera el umbral, crea un FraudAlertEvent.
+-   Publica el evento en Azure Storage Queue.
+-   No construye HTML.
+-   No conoce Azure Communication Services.
+
+2.  Azure Storage Queue
+
+-   Transporta el evento.
+-   Desacopla el cálculo del envío de correos.
+-   Permite reintentos automáticos.
+
+3.  Azure Function
+
+-   Se activa automáticamente con el Queue Trigger.
+-   Deserializa el FraudAlertEvent.
+-   Construye el asunto del correo.
+-   Construye el HTML.
+-   Llama a Azure Communication Services.
+
+4.  Azure Communication Services
+
+-   Recibe el EmailMessage.
+-   Envía el correo.
+-   Gestiona la entrega.
+
+Repositorio de la Azure Function
+
+email-sender-function/
+
+├── pom.xml ├── host.json ├── local.settings.json ├── README.md └── src
+└── main └── java └── com.company.emailsender ├── function │ └──
+EmailNotificationFunction.java ├── dto │ └── FraudAlertEvent.java ├──
+service │ ├── EmailService.java │ └──
+AzureCommunicationEmailService.java ├── template │ └──
+FraudEmailTemplateBuilder.java ├── config │ └──
+AzureCommunicationConfig.java └── model └── RuleActivation.java
+
+Responsabilidad de cada clase
+
+EmailNotificationFunction - Queue Trigger. - Recibe el evento. - Llama a
+EmailService.send(event).
+
+FraudAlertEvent - DTO plano con toda la información necesaria.
+
+EmailService - Interfaz para el envío de correos.
+
+AzureCommunicationEmailService - Construye el EmailMessage. - Usa el SDK
+de Azure Communication Services. - Envía el correo.
+
+FraudEmailTemplateBuilder - Convierte FraudAlertEvent en HTML.
+
+AzureCommunicationConfig - Crea y configura el EmailClient utilizando la
+cadena de conexión.
+
+Flujo interno
+
+Queue Trigger | v EmailNotificationFunction | v EmailService | v
+FraudEmailTemplateBuilder | v Azure Communication Services | v Correo
+enviado

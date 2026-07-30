@@ -1,0 +1,6 @@
+target/
+local.settings.json
+bin/
+obj/
+.vscode/
+*.class
