@@ -7,8 +7,8 @@ import com.ingesta.dto.TransactionResponse;
 import com.ingesta.model.DatosDocumento;
 import com.ingesta.model.Transaction;
 import com.ingesta.repository.DatosDocumentoRepository;
-import com.ingesta.service.DocumentIntelligenceService;
 import com.ingesta.service.EvidenciaService;
+import com.ingesta.service.ReconocimientoDocumentalService;
 import com.ingesta.service.TransactionScoringService;
 import com.ingesta.service.TransactionService;
 import jakarta.validation.Valid;
@@ -37,19 +37,19 @@ public class TransactionController {
     private final TransactionService service;
     private final EvidenciaService evidenciaService;
     private final TransactionScoringService scoringService;
-    private final DocumentIntelligenceService documentIntelligenceService;
+    private final ReconocimientoDocumentalService reconocimientoDocumentalService;
     private final DatosDocumentoRepository datosDocumentoRepository;
 
     public TransactionController(
             TransactionService service,
             EvidenciaService evidenciaService,
             TransactionScoringService scoringService,
-            DocumentIntelligenceService documentIntelligenceService,
+            ReconocimientoDocumentalService reconocimientoDocumentalService,
             DatosDocumentoRepository datosDocumentoRepository) {
         this.service = service;
         this.evidenciaService = evidenciaService;
         this.scoringService = scoringService;
-        this.documentIntelligenceService = documentIntelligenceService;
+        this.reconocimientoDocumentalService = reconocimientoDocumentalService;
         this.datosDocumentoRepository = datosDocumentoRepository;
     }
 
@@ -141,7 +141,7 @@ public class TransactionController {
             @RequestParam("file") MultipartFile file) throws IOException {
         service.getById(transactionId);
         String blobName = evidenciaService.cargarEvidenciaSegura(transactionId, file.getInputStream(), file.getSize());
-        documentIntelligenceService.extraerYAdjuntar(transactionId, blobName);
+        reconocimientoDocumentalService.extraerYAdjuntar(transactionId, blobName);
         return ResponseEntity.status(HttpStatus.CREATED).body(new EvidenciaResponse(transactionId, blobName));
     }
 }

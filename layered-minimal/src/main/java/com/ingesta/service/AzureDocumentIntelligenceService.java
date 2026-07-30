@@ -12,8 +12,6 @@ import com.ingesta.model.DatosDocumento;
 import com.ingesta.repository.DatosDocumentoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -25,64 +23,29 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Servicio de reconocimiento documental: al cargar un documento en el contenedor de
- * evidencias, extrae datos estructurados (nombre, numero de identificacion, fechas) con
- * Azure AI Document Intelligence y los adjunta a la transaccion/caso correspondiente.
- *
- * Un documento ilegible, incompleto, corrupto o de formato inesperado no debe interrumpir
- * el flujo: en cualquiera de esos casos se guarda igual un resultado FALLIDO (consultable
- * via el repositorio/endpoint, en vez de desaparecer sin dejar rastro) y se notifica al
- * equipo analitico, igual que en el caso exitoso.
+ * Reconocimiento documental extrayendo datos estructurados (nombre, numero de
+ * identificacion, fechas) con Azure AI Document Intelligence (modelo prebuilt-idDocument).
  */
-@Service
-public class DocumentIntelligenceService {
+public class AzureDocumentIntelligenceService extends AbstractReconocimientoDocumentalService {
 
-    private static final Logger log = LoggerFactory.getLogger(DocumentIntelligenceService.class);
+    private static final Logger log = LoggerFactory.getLogger(AzureDocumentIntelligenceService.class);
     private static final String MODELO_ID_DOCUMENTO = "prebuilt-idDocument";
 
     private final DocumentIntelligenceClient client;
     private final BlobContainerClient containerClient;
-    private final DatosDocumentoRepository repository;
-    private final DocumentoProcesadoEventPublisher eventPublisher;
 
-    public DocumentIntelligenceService(
+    public AzureDocumentIntelligenceService(
             DocumentIntelligenceClient documentIntelligenceClient,
             BlobContainerClient evidenciasContainerClient,
             DatosDocumentoRepository repository,
             DocumentoProcesadoEventPublisher eventPublisher) {
+        super(repository, eventPublisher);
         this.client = documentIntelligenceClient;
         this.containerClient = evidenciasContainerClient;
-        this.repository = repository;
-        this.eventPublisher = eventPublisher;
     }
 
-    /**
-     * Se ejecuta en un hilo aparte (eventoIngestaExecutor): la subida de la evidencia ya
-     * respondio al cliente antes de que esto corra. Sea cual sea el resultado (exito o
-     * fallo), siempre queda un DatosDocumento consultable y una notificacion al analista;
-     * ningun escenario deja el documento en un limbo indistinguible de "aun no procesado".
-     */
-    @Async("eventoIngestaExecutor")
-    public void extraerYAdjuntar(String transactionId, String blobName) {
-        DatosDocumento resultado;
-        try {
-            resultado = analizar(transactionId, blobName);
-        } catch (Exception ex) {
-            log.error("No se pudo extraer datos estructurados del documento {} de la transaccion {}",
-                    blobName, transactionId, ex);
-            resultado = DatosDocumento.fallido(transactionId, blobName, motivoLegible(ex), Instant.now());
-        }
-
-        try {
-            repository.save(resultado);
-            eventPublisher.notificarResultado(resultado);
-        } catch (Exception ex) {
-            log.error("No se pudo guardar/notificar el resultado del procesamiento documental de la transaccion {}",
-                    transactionId, ex);
-        }
-    }
-
-    private DatosDocumento analizar(String transactionId, String blobName) {
+    @Override
+    protected DatosDocumento analizar(String transactionId, String blobName) {
         byte[] contenido = containerClient.getBlobClient(blobName).downloadContent().toBytes();
 
         SyncPoller<AnalyzeOperationDetails, AnalyzeResult> poller =
@@ -112,12 +75,6 @@ public class DocumentIntelligenceService {
 
         return DatosDocumento.completado(
                 transactionId, blobName, nombre.isBlank() ? null : nombre, numeroIdentificacion, fechas, Instant.now());
-    }
-
-    private String motivoLegible(Exception ex) {
-        String mensaje = ex.getMessage();
-        return "No se pudo procesar el documento (corrupto o formato inesperado): "
-                + (mensaje != null && !mensaje.isBlank() ? mensaje : ex.getClass().getSimpleName());
     }
 
     private void agregarSiNoEsNulo(Map<String, LocalDate> fechas, String clave, LocalDate valor) {
