@@ -37,12 +37,14 @@ public class TransactionService {
         validate(request);
 
         Instant ingestedAt = Instant.now(clock);
+        Instant occurredAt = (request.occurredAt() != null) ? request.occurredAt() : ingestedAt;
+
         Transaction transaction = new Transaction(
                 request.transactionId(),
                 request.accountId(),
                 request.amount(),
                 request.currency().toUpperCase(),
-                request.occurredAt(),
+                occurredAt,
                 ingestedAt,
                 request.latitude(),
                 request.longitude(),
