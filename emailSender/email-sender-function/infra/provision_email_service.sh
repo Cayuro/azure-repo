@@ -27,13 +27,31 @@ az extension add --name communication --only-show-errors 2>/dev/null || true
 echo ">> Resource Group: verificando $RG..."
 az group show --name "$RG" --output none
 
+echo ">> Resource Provider 'Microsoft.Communication': verificando registro..."
+RP_STATE=$(az provider show --namespace Microsoft.Communication --query registrationState -o tsv 2>/dev/null || echo "NotRegistered")
+if [ "$RP_STATE" != "Registered" ]; then
+  echo "   No esta registrado en esta suscripcion, registrando (puede tardar 1-2 min)..."
+  az provider register --namespace Microsoft.Communication
+  until [ "$(az provider show --namespace Microsoft.Communication --query registrationState -o tsv)" == "Registered" ]; do
+    echo "   ... esperando registro"
+    sleep 5
+  done
+fi
+echo "   OK, registrado."
+
+# Nota: estos "create" son operaciones PUT de ARM, ya idempotentes por si solas
+# (correr el script otra vez con los mismos valores no falla). Por eso, a
+# diferencia de otros scripts de esta carpeta, aqui NO se enmascara el error
+# con `|| echo "ya existia"`: si algo falla (RP no registrado, nombre
+# invalido, permisos, cuota, etc.) es mejor ver el error real de az cli.
+
 echo ">> Communication Services: creando/verificando $ACS_NAME..."
 az communication create \
   --name "$ACS_NAME" \
   --location "global" \
   --data-location "$DATA_LOCATION" \
   --resource-group "$RG" \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 echo ">> Email Communication Services: creando/verificando $EMAIL_SERVICE_NAME..."
 az communication email create \
@@ -41,7 +59,7 @@ az communication email create \
   --location "global" \
   --data-location "$DATA_LOCATION" \
   --resource-group "$RG" \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 echo ">> Dominio administrado por Azure: creando/verificando..."
 az communication email domain create \
@@ -50,7 +68,7 @@ az communication email domain create \
   --resource-group "$RG" \
   --location "global" \
   --domain-management "AzureManaged" \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 DOMAIN_ID=$(az communication email domain show \
   --domain-name "AzureManagedDomain" \
@@ -65,6 +83,10 @@ FROM_SENDER_DOMAIN=$(az communication email domain show \
   --query "fromSenderDomain" -o tsv)
 
 echo ">> Vinculando el dominio al recurso Communication Services..."
+# Si tu version de az cli no reconoce --linked-domains, alternativa via
+# generic update:
+#   ACS_ID=$(az communication show --name "$ACS_NAME" -g "$RG" --query id -o tsv)
+#   az resource update --ids "$ACS_ID" --set "properties.linkedDomains=[\"$DOMAIN_ID\"]"
 az communication update \
   --name "$ACS_NAME" \
   --resource-group "$RG" \
