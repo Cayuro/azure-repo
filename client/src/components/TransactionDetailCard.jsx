@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { formatCurrency, formatDateTime, maskIdentifier } from '../utils/formatters';
 import ScoreBar from './ScoreBar';
 import EvidenceUploader from './EvidenceUploader';
@@ -38,6 +39,11 @@ function TransactionDetailCard({ transaction, risk, evidences, onPreview, onStat
           <h2>{maskIdentifier(transaction.transactionId)}</h2>
           <div className="muted small">{transaction.merchantCategory} · {maskIdentifier(transaction.accountId)}</div>
           <div className="muted small">Estado caso: {fraudCase?.status ?? 'No aplica'}</div>
+          {fraudCase?.caseId ? (
+            <div className="muted small">
+              Caso ID: <Link to={`/cases/${fraudCase.caseId}`} state={{ transaction, risk, evidences }}>{maskIdentifier(fraudCase.caseId)}</Link>
+            </div>
+          ) : null}
         </div>
         <div className="detail-actions">
           {hasFraudCase ? (
