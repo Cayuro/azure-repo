@@ -1,0 +1,176 @@
+<mxfile host="app.diagrams.net" modified="2023-10-25T00:00:00.000Z" agent="Mozilla/5.0" version="22.0.0" type="device">
+  <diagram id="R2lEEEUBdFMjLlhIrx00" name="Platform Schema">
+    <mxGraphModel dx="1434" dy="792" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- ============================================== -->
+        <!-- TABLE: status                                  -->
+        <!-- ============================================== -->
+        <mxCell id="table_status" value="status" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="750" y="50" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="status_1" value="PK | id_status : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_status">
+          <mxGeometry y="30" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="status_2" value="name : NVARCHAR(150)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_status">
+          <mxGeometry y="60" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================== -->
+        <!-- TABLE: cases                                   -->
+        <!-- ============================================== -->
+        <mxCell id="table_cases" value="cases" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="400" y="200" width="220" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="cases_1" value="PK | id_case : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_cases">
+          <mxGeometry y="30" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="cases_2" value="FK | id_status : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_cases">
+          <mxGeometry y="60" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="cases_3" value="id_transaction : NVARCHAR" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_cases">
+          <mxGeometry y="90" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="cases_4" value="score : DECIMAL(5,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_cases">
+          <mxGeometry y="120" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="cases_5" value="opened_at : DATETIME2" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_cases">
+          <mxGeometry y="150" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="cases_6" value="created_at : DATETIME2" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_cases">
+          <mxGeometry y="180" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="cases_7" value="updated_at : DATETIME2" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_cases">
+          <mxGeometry y="210" width="220" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================== -->
+        <!-- TABLE: analyst                                 -->
+        <!-- ============================================== -->
+        <mxCell id="table_analyst" value="analyst" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="50" y="200" width="220" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="analyst_1" value="PK | id_analyst : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_analyst">
+          <mxGeometry y="30" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="analyst_2" value="full_name : NVARCHAR" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_analyst">
+          <mxGeometry y="60" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="analyst_3" value="email : NVARCHAR(255)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_analyst">
+          <mxGeometry y="90" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="analyst_4" value="phone_number : NVARCHAR" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_analyst">
+          <mxGeometry y="120" width="220" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================== -->
+        <!-- TABLE: assignment                              -->
+        <!-- ============================================== -->
+        <mxCell id="table_assignment" value="assignment" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="50" y="450" width="220" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="assign_1" value="PK | id_assignment : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_assignment">
+          <mxGeometry y="30" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="assign_2" value="FK | id_case : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_assignment">
+          <mxGeometry y="60" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="assign_3" value="FK | id_analyst : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_assignment">
+          <mxGeometry y="90" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="assign_4" value="assigned_at : DATETIME2" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_assignment">
+          <mxGeometry y="120" width="220" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================== -->
+        <!-- TABLE: resolution                              -->
+        <!-- ============================================== -->
+        <mxCell id="table_resolution" value="resolution" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="400" y="550" width="220" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="res_1" value="PK | id_resolution : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_resolution">
+          <mxGeometry y="30" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="res_2" value="FK,UQ | id_case : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_resolution">
+          <mxGeometry y="60" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="res_3" value="decision : NVARCHAR(255)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_resolution">
+          <mxGeometry y="90" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="res_4" value="notes : NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_resolution">
+          <mxGeometry y="120" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="res_5" value="resolved_at : DATETIME2" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_resolution">
+          <mxGeometry y="150" width="220" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================== -->
+        <!-- TABLE: audit                                   -->
+        <!-- ============================================== -->
+        <mxCell id="table_audit" value="audit" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="750" y="300" width="200" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="audit_1" value="PK | id_audit : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_audit">
+          <mxGeometry y="30" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="audit_2" value="FK | id_case : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_audit">
+          <mxGeometry y="60" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="audit_3" value="FK | old_status_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_audit">
+          <mxGeometry y="90" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="audit_4" value="FK | new_status_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_audit">
+          <mxGeometry y="120" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="audit_5" value="changed_by : NVARCHAR" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_audit">
+          <mxGeometry y="150" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="audit_6" value="changed_at : DATETIME2" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="table_audit">
+          <mxGeometry y="180" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================== -->
+        <!-- RELATIONSHIPS (EDGES)                          -->
+        <!-- ============================================== -->
+        
+        <!-- status 1:N cases -->
+        <mxCell id="edge_status_cases" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERmandOne;strokeWidth=1.5;" edge="1" parent="1" source="table_status" target="table_cases">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- cases 1:N assignment -->
+        <mxCell id="edge_cases_assignment" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERmandOne;strokeWidth=1.5;" edge="1" parent="1" source="table_cases" target="table_assignment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- analyst 1:N assignment -->
+        <mxCell id="edge_analyst_assignment" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERmandOne;strokeWidth=1.5;" edge="1" parent="1" source="table_analyst" target="table_assignment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- cases 1:1 resolution -->
+        <mxCell id="edge_cases_resolution" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmandOne;startArrow=ERmandOne;strokeWidth=1.5;" edge="1" parent="1" source="table_cases" target="table_resolution">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- cases 1:N audit -->
+        <mxCell id="edge_cases_audit" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERmandOne;strokeWidth=1.5;" edge="1" parent="1" source="table_cases" target="table_audit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- status 1:N audit (old_status_id) -->
+        <mxCell id="edge_status_audit_old" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=ERmany;startArrow=ERzeroToOne;strokeWidth=1;dashed=1;" edge="1" parent="1" source="table_status" target="table_audit">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="980" y="95" />
+              <mxPoint x="980" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
