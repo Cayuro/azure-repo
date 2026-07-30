@@ -113,17 +113,14 @@ asignar_rol_cosmos() {
   fi
 }
 
+# Unicamente la Managed Identity del App Service recibe el rol de datos: nadie
+# mas (ni desarrolladores con su propia sesion de az login) puede leer o
+# escribir directamente en Cosmos. Un desarrollador corriendo la app localmente
+# necesitaria que se le asigne este mismo rol a mano si el equipo decide
+# permitirlo puntualmente; por defecto queda restringido solo a la app.
 echo ">> Asignando rol de datos a la Managed Identity del App Service $APP_NAME..."
 APP_PRINCIPAL_ID=$(az webapp identity show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query principalId -o tsv 2>/dev/null || echo "")
 asignar_rol_cosmos "$APP_PRINCIPAL_ID" "la Managed Identity de $APP_NAME"
-
-# El App Service usa su Managed Identity, pero un desarrollador corriendo la app
-# localmente (mvn spring-boot:run) se autentica con su propia sesion de az login,
-# que necesita el mismo rol de datos -- si no, DefaultAzureCredential funciona
-# pero Cosmos rechaza cada operacion con 403.
-echo ">> Asignando el mismo rol a tu identidad actual de az login (para desarrollo local)..."
-DEV_PRINCIPAL_ID=$(az ad signed-in-user show --query id -o tsv 2>/dev/null || echo "")
-asignar_rol_cosmos "$DEV_PRINCIPAL_ID" "tu usuario (az login)"
 
 # ---------- 8. Salida Informativa ----------
 echo ""
