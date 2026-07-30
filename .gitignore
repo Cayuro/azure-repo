@@ -1,0 +1,16 @@
+# Node and frontend build artifacts
+client/node_modules
+client/dist
+client/node
+client/.vite
+client/.cache
+
+# Maven build artifacts
+layered-minimal/target
+
+# IntelliJ / VS Code
+/.idea
+.vscode
+
+# Logs
+*.log
