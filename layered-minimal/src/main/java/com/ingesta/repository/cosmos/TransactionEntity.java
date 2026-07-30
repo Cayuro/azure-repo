@@ -22,7 +22,12 @@ public class TransactionEntity {
     @PartitionKey
     private String accountId;
 
-    private BigDecimal amount;
+    // Se guarda como String (no BigDecimal) porque el mapper de Spring Data Cosmos
+    // intenta introspeccionar por reflection los campos internos de BigDecimal
+    // (java.math.BigDecimal.intVal), y Java 17+ bloquea ese acceso por el modulo
+    // java.base (InaccessibleObjectException). toPlainString()/BigDecimal(String)
+    // preserva la precision exacta sin depender de esa reflection.
+    private String amount;
     private String currency;
     private Instant occurredAt;
     private Instant ingestedAt;
@@ -41,7 +46,7 @@ public class TransactionEntity {
         TransactionEntity e = new TransactionEntity();
         e.transactionId    = t.transactionId();
         e.accountId        = t.accountId();
-        e.amount           = t.amount();
+        e.amount           = t.amount().toPlainString();
         e.currency         = t.currency();
         e.occurredAt       = t.occurredAt();
         e.ingestedAt       = t.ingestedAt();
@@ -57,7 +62,7 @@ public class TransactionEntity {
      */
     public Transaction toDomain() {
         return new Transaction(
-                transactionId, accountId, amount, currency,
+                transactionId, accountId, new BigDecimal(amount), currency,
                 occurredAt, ingestedAt, latitude, longitude,
                 merchantId, merchantCategory);
     }
@@ -67,8 +72,8 @@ public class TransactionEntity {
     public void setTransactionId(String v)      { this.transactionId = v; }
     public String getAccountId()                { return accountId; }
     public void setAccountId(String v)          { this.accountId = v; }
-    public BigDecimal getAmount()               { return amount; }
-    public void setAmount(BigDecimal v)         { this.amount = v; }
+    public String getAmount()                   { return amount; }
+    public void setAmount(String v)             { this.amount = v; }
     public String getCurrency()                 { return currency; }
     public void setCurrency(String v)           { this.currency = v; }
     public Instant getOccurredAt()              { return occurredAt; }
