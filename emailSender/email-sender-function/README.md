@@ -19,92 +19,72 @@ Se necesitan **dos recursos** dentro de Azure Communication Services:
    `DoNotReply@<ese-subdominio>.azurecomm.net` (puedes agregar mas alias con
    `sender-username create`, pero no puedes usar tu propio dominio de correo).
 
-### Pasos (Azure CLI)
+### Como crearlo
 
-```bash
-# Variables (ajustar)
-RG="rg-centinela-prod"
-LOCATION="global"                 # Communication Services es un recurso "global"
-DATA_LOCATION="United States"     # Residencia de datos: United States | Europe | UK | Brazil | Asia Pacific | Australia | Canada | ...
-ACS_NAME="acs-centinela-prod"
-EMAIL_SERVICE_NAME="acs-email-centinela-prod"
+Script listo para correr: [`infra/provision_email_service.sh`](infra/provision_email_service.sh)
+(genérico, solo hay que exportar `RG`, `ACS_NAME`, `EMAIL_SERVICE_NAME` y
+opcionalmente `DATA_LOCATION`). Al final imprime `EmailSenderAddress` y
+`CommunicationServicesConnectionString` listos para pegar en los App
+Settings de la Function.
 
-# 0. Extension de CLI (si no la tienes)
-az extension add --name communication
-
-# 1. Resource Group (si no existe)
-az group create --name "$RG" --location "eastus"
-
-# 2. Recurso Communication Services (da el connection string)
-az communication create \
-  --name "$ACS_NAME" \
-  --location "$LOCATION" \
-  --data-location "$DATA_LOCATION" \
-  --resource-group "$RG"
-
-# 3. Recurso Email Communication Services
-az communication email create \
-  --name "$EMAIL_SERVICE_NAME" \
-  --location "$LOCATION" \
-  --data-location "$DATA_LOCATION" \
-  --resource-group "$RG"
-
-# 4. Dominio administrado por Azure (default, sin DNS propio)
-az communication email domain create \
-  --domain-name "AzureManagedDomain" \
-  --email-service-name "$EMAIL_SERVICE_NAME" \
-  --resource-group "$RG" \
-  --location "$LOCATION" \
-  --domain-management "AzureManaged"
-
-# 5. Obtener el id del dominio y el subdominio generado
-az communication email domain show \
-  --domain-name "AzureManagedDomain" \
-  --email-service-name "$EMAIL_SERVICE_NAME" \
-  --resource-group "$RG" \
-  --query "{id:id, fromSenderDomain:fromSenderDomain, mailFromSenderDomain:mailFromSenderDomain}" \
-  -o json
-
-# 6. Vincular el dominio al recurso de Communication Services
-DOMAIN_ID=$(az communication email domain show \
-  --domain-name "AzureManagedDomain" \
-  --email-service-name "$EMAIL_SERVICE_NAME" \
-  --resource-group "$RG" \
-  --query "id" -o tsv)
-
-az communication update \
-  --name "$ACS_NAME" \
-  --resource-group "$RG" \
-  --linked-domains "$DOMAIN_ID"
-
-# 7. Obtener el connection string (esto va en CommunicationServicesConnectionString)
-az communication list-key \
-  --name "$ACS_NAME" \
-  --resource-group "$RG" \
-  --query "primaryConnectionString" -o tsv
-```
-
-El remitente por defecto queda como `DoNotReply@<fromSenderDomain>` (el valor
-que devolvio el paso 5). Ese valor es el que va en `EmailSenderAddress`.
+El remitente por defecto queda como `DoNotReply@<subdominio-generado>`.
 
 > El dominio administrado por Azure tiene limite de envio (pensado para dev/
 > pruebas y volumenes bajos). Si mas adelante el volumen de alertas crece,
 > se migra a un dominio propio verificado por DNS sin tocar el codigo de la
-> Function (solo cambia `EmailSenderAddress` y no hace falta el paso 4).
+> Function (solo cambia `EmailSenderAddress`).
+
+## Networking: como se conecta la Function con la cola (y con ACS)
+
+No es obligatorio usar VNet: por defecto todo pasa por HTTPS publico con
+Managed Identity + RBAC. La VNet solo hace falta si la Storage Account de
+negocio (la que tiene la cola) esta (o va a estar) con acceso publico
+bloqueado. Hay dos variantes completas de scripts en `infra/`, ver
+[`infra/README.md`](infra/README.md) para el detalle y el orden de
+ejecucion:
+
+- **`infra/sin-vnet/`**: todo publico, Function en plan Consumption clasico.
+  Usa **una sola storage account**: la misma cuenta que tiene la cola de
+  negocio sirve tambien como `AzureWebJobsStorage` (plomeria interna de la
+  Function: deployment package, leases de coordinacion). No hay problema en
+  compartirla porque nada queda bloqueado a nivel de red.
+- **`infra/con-vnet/`**: la cola queda bloqueada a acceso publico y solo
+  alcanzable via **Private Endpoint** (subrecurso `queue`) + Private DNS
+  Zone. La Function llega a ella por **VNet Integration** regional (subred
+  delegada, plan **Flex Consumption**, unico que soporta VNet Integration
+  con pago por ejecucion) con Route All activado, autenticada sin claves via
+  **Managed Identity** (`FraudQueueStorage__queueServiceUri` +
+  `FraudQueueStorage__credential=managedidentity`, rol RBAC `Storage Queue
+  Data Contributor`). Aqui **si hacen falta dos storage accounts
+  separadas** (una nueva para el runtime de la Function, otra para la cola
+  de negocio): si usaras la misma cuenta para las dos cosas y la
+  bloquearas, la creacion/despliegue de la Function fallaria porque Azure
+  no podria subir el paquete de deployment a una cuenta sin acceso publico.
+
+**Azure Communication Services (Email) se queda fuera de la VNet en ambos
+casos.** Hoy no soporta Private Endpoint, asi que esa llamada siempre sale
+por el endpoint publico de ACS. No es un fallo de configuracion, es una
+limitacion actual del servicio.
+
+Los scripts de la variante con-vnet tienen comandos marcados como
+"verificar" en su encabezado (sintaxis de Flex Consumption relativamente
+nueva) - leelos antes de correrlos.
 
 ## Variables de entorno / App Settings que necesita la Function
 
 | Nombre | Descripcion |
 |---|---|
-| `AzureWebJobsStorage` | Connection string de la Storage Account donde vive la cola. Debe ser la **misma cuenta** donde el App Service publica los `FraudAlertEvent`. |
+| `AzureWebJobsStorage` | Connection string de la storage account de runtime de la Function. La configura sola `az functionapp create` / el script de infra. En `sin-vnet` es la misma cuenta que la de negocio; en `con-vnet` es una cuenta separada (ver sección de Networking). |
+| `FraudQueueStorage` | Conexion (por Managed Identity si usas el script de infra, o connection string en local) hacia la storage account **de negocio** donde vive la cola. Es la que usa el `@QueueTrigger`. |
 | `FraudQueueName` | Nombre de la cola que consume el Queue Trigger (la misma que usa el App Service para publicar). |
-| `CommunicationServicesConnectionString` | Connection string obtenido en el paso 7. |
-| `EmailSenderAddress` | Remitente, ej. `DoNotReply@xxxxxxxx.azurecomm.net` (paso 5). |
+| `CommunicationServicesConnectionString` | Connection string que imprime `infra/provision_email_service.sh` al final. |
+| `EmailSenderAddress` | Remitente, ej. `DoNotReply@xxxxxxxx.azurecomm.net` (tambien lo imprime ese script). |
 | `FraudAlertRecipients` | Lista de destinatarios separados por coma. |
 
 En local, se configuran en `local.settings.json` (no se commitea, esta en
 `.gitignore`). En Azure, se configuran como *Application Settings* del
-Function App (idealmente referenciando Key Vault para el connection string).
+Function App (idealmente referenciando Key Vault para el connection string
+de ACS).
 
 ## Correr localmente
 

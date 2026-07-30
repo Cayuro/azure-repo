@@ -31,7 +31,7 @@ public class EmailNotificationFunction {
         @QueueTrigger(
             name = "message",
             queueName = "%FraudQueueName%",
-            connection = "AzureWebJobsStorage"
+            connection = "FraudQueueStorage"
         ) String message,
         ExecutionContext context
     ) {
