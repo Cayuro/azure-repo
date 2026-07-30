@@ -3,6 +3,7 @@ package com.ingesta.controller;
 import com.ingesta.dto.EvidenciaResponse;
 import com.ingesta.dto.RiesgoResponse;
 import com.ingesta.dto.TransactionRequest;
+import com.ingesta.dto.TransactionScoreSummary;
 import com.ingesta.dto.TransactionResponse;
 import com.ingesta.model.DatosDocumento;
 import com.ingesta.model.Transaction;
@@ -94,6 +95,13 @@ public class TransactionController {
     public ResponseEntity<RiesgoResponse> getRiesgo(@PathVariable String transactionId) {
         service.getById(transactionId);
         return ResponseEntity.ok(scoringService.obtenerRiesgo(transactionId));
+    }
+
+    @Operation(summary = "Lista los riesgos calculados de todas las transacciones")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Listado devuelto")})
+    @GetMapping("/riesgos")
+    public ResponseEntity<List<TransactionScoreSummary>> listScores() {
+        return ResponseEntity.ok(scoringService.listarScores());
     }
 
     @Operation(summary = "Consulta los datos estructurados extraidos de las evidencias de una transaccion")

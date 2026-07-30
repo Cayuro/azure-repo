@@ -1,8 +1,22 @@
 import { formatCurrency, formatDateTime, maskIdentifier } from '../utils/formatters';
 import { useNavigate } from 'react-router-dom';
 
-function TransactionTable({ transactions, selectedId, loading, error, onSelect }) {
+function TransactionTable({ transactions, selectedId, loading, error, onSelect, risksById = {} }) {
   const navigate = useNavigate();
+
+  function getRiskClass(score) {
+    const value = Number(score) || 0;
+    if (value >= 70) return 'score-high';
+    if (value >= 40) return 'score-medium';
+    return 'score-low';
+  }
+
+  function getRiskLabel(score) {
+    const value = Number(score) || 0;
+    if (value >= 70) return 'ALTO';
+    if (value >= 40) return 'MEDIO';
+    return 'BAJO';
+  }
 
   if (loading) {
     return <div className="panel loading">Cargando transacciones...</div>;
@@ -30,29 +44,43 @@ function TransactionTable({ transactions, selectedId, loading, error, onSelect }
               <th>Cuenta</th>
               <th>Monto</th>
               <th>Fecha</th>
+              <th>Scoring</th>
               <th>Comercio</th>
             </tr>
           </thead>
           <tbody>
-            {transactions.map((tx) => (
-              <tr key={tx.transactionId} className={selectedId === tx.transactionId ? 'selected' : ''}>
-                <td>
-                  <button
-                    className="link-button"
-                    onClick={() => {
-                      onSelect?.(tx.transactionId);
-                      navigate(`/transactions/${tx.transactionId}`);
-                    }}
-                  >
-                    {maskIdentifier(tx.transactionId)}
-                  </button>
-                </td>
-                <td>{maskIdentifier(tx.accountId)}</td>
-                <td>{formatCurrency(tx.amount, tx.currency)}</td>
-                <td>{formatDateTime(tx.ingestedAt || tx.occurredAt)}</td>
-                <td>{tx.merchantCategory}</td>
-              </tr>
-            ))}
+            {transactions.map((tx) => {
+              const risk = risksById?.[tx.transactionId];
+              const score = risk?.score ?? null;
+              const riskClass = score == null ? 'neutral' : getRiskClass(score);
+              const riskLabel = score == null ? '—' : getRiskLabel(score);
+
+              return (
+                <tr key={tx.transactionId} className={selectedId === tx.transactionId ? 'selected' : ''}>
+                  <td>
+                    <button
+                      className="link-button"
+                      onClick={() => {
+                        onSelect?.(tx.transactionId);
+                        navigate(`/transactions/${tx.transactionId}`);
+                      }}
+                    >
+                      {maskIdentifier(tx.transactionId)}
+                    </button>
+                  </td>
+                  <td>{maskIdentifier(tx.accountId)}</td>
+                  <td>{formatCurrency(tx.amount, tx.currency)}</td>
+                  <td>{formatDateTime(tx.ingestedAt || tx.occurredAt)}</td>
+                  <td>
+                    <span className={`transaction-score-pill ${riskClass}`}>
+                      <span className="score-value">{score == null ? '—' : Math.round(Number(score))}</span>
+                      <span className="score-label">{riskLabel}</span>
+                    </span>
+                  </td>
+                  <td>{tx.merchantCategory}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

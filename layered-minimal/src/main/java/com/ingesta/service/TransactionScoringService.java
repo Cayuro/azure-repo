@@ -1,6 +1,7 @@
 package com.ingesta.service;
 
 import com.ingesta.dto.RiesgoResponse;
+import com.ingesta.dto.TransactionScoreSummary;
 import com.ingesta.messaging.TransactionIngestedEvent;
 import com.ingesta.model.FraudCase;
 import com.ingesta.model.Transaction;
@@ -68,5 +69,15 @@ public class TransactionScoringService {
         return scoreRepository.findByTransactionId(transactionId)
                 .map(score -> RiesgoResponse.of(score, fraudCaseRepository.findByTransactionId(transactionId)))
                 .orElseGet(() -> RiesgoResponse.pending(transactionId));
+    }
+
+    public List<TransactionScoreSummary> listarScores() {
+        return scoreRepository.findAll().stream()
+                .map(score -> new TransactionScoreSummary(
+                        score.transactionId(),
+                        score.score(),
+                        score.threshold(),
+                        true))
+                .toList();
     }
 }

@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import StatCard from '../components/StatCard';
 import TransactionTable from '../components/TransactionTable';
 import TransactionDetailCard from '../components/TransactionDetailCard';
-import { downloadEvidence, getErrorMessage, getTransaction, getTransactionEvidenceList, getTransactionRisk, getTransactions } from '../services/api';
+import { downloadEvidence, getAllTransactionScores, getErrorMessage, getTransaction, getTransactionEvidenceList, getTransactionRisk, getTransactions } from '../services/api';
 
 function DashboardPage() {
   const [transactions, setTransactions] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [risk, setRisk] = useState(null);
+  const [risksById, setRisksById] = useState({});
   const [evidences, setEvidences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -19,10 +20,18 @@ function DashboardPage() {
       try {
         setLoading(true);
         const data = await getTransactions();
-        setTransactions(Array.isArray(data) ? data : []);
-        if (data?.length) {
-          setSelectedId(data[0].transactionId);
+        const list = Array.isArray(data) ? data : [];
+        setTransactions(list);
+        if (list.length) {
+          setSelectedId(list[0].transactionId);
         }
+
+        const scoresResult = await getAllTransactionScores();
+        const nextRisks = {};
+        (Array.isArray(scoresResult) ? scoresResult : []).forEach((score) => {
+          nextRisks[score.transactionId] = score;
+        });
+        setRisksById((prev) => ({ ...prev, ...nextRisks }));
       } catch (err) {
         setError(getErrorMessage(err));
       } finally {
@@ -41,6 +50,13 @@ function DashboardPage() {
       return;
     }
 
+    const cachedRisk = risksById[selectedId];
+    if (cachedRisk) {
+      setRisk(cachedRisk);
+      setDetailLoading(false);
+      return;
+    }
+
     async function loadDetails() {
       try {
         setDetailLoading(true);
@@ -52,6 +68,7 @@ function DashboardPage() {
 
         setSelectedTransaction(transaction);
         setRisk(riskResult);
+        setRisksById((prev) => ({ ...prev, [selectedId]: riskResult }));
         setEvidences(Array.isArray(evidenceResult) ? evidenceResult : []);
       } catch (err) {
         setSelectedTransaction(null);
@@ -64,13 +81,17 @@ function DashboardPage() {
     }
 
     loadDetails();
-  }, [selectedId]);
+  }, [selectedId, risksById]);
 
   const summary = useMemo(() => ({
     total: transactions.length,
-    alerts: transactions.filter((tx) => Number(tx.amount) > 2500).length,
+    alerts: transactions.filter((tx) => {
+      const score = Number(risksById[tx.transactionId]?.score ?? 0);
+      const threshold = Number(risksById[tx.transactionId]?.threshold ?? 0);
+      return score > threshold;
+    }).length,
     latest: transactions[0]?.transactionId || '—'
-  }), [transactions]);
+  }), [transactions, risksById]);
 
   async function handlePreviewEvidence(blobName) {
     try {
@@ -104,6 +125,7 @@ function DashboardPage() {
           loading={loading}
           error={error}
           onSelect={setSelectedId}
+          risksById={risksById}
         />
 
         {detailLoading ? <div className="panel">Cargando detalle...</div> : (

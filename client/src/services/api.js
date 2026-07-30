@@ -40,6 +40,11 @@ export async function getTransactionRisk(transactionId) {
   return parseResponse(response);
 }
 
+export async function getAllTransactionScores() {
+  const response = await fetch(`${API_BASE}/riesgos`);
+  return parseResponse(response);
+}
+
 export async function getTransactionEvidenceList(transactionId) {
   const response = await fetch(`${API_BASE}/${encodeURIComponent(transactionId)}/evidencias`);
   return parseResponse(response);
