@@ -33,4 +33,5 @@ public class AzureQueueConfig {
                 .credential(new DefaultAzureCredentialBuilder().build())
                 .buildClient();
     }
+
 }

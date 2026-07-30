@@ -28,6 +28,11 @@ import java.util.stream.Stream;
  * Servicio de reconocimiento documental: al cargar un documento en el contenedor de
  * evidencias, extrae datos estructurados (nombre, numero de identificacion, fechas) con
  * Azure AI Document Intelligence y los adjunta a la transaccion/caso correspondiente.
+ *
+ * Un documento ilegible, incompleto, corrupto o de formato inesperado no debe interrumpir
+ * el flujo: en cualquiera de esos casos se guarda igual un resultado FALLIDO (consultable
+ * via el repositorio/endpoint, en vez de desaparecer sin dejar rastro) y se notifica al
+ * equipo analitico, igual que en el caso exitoso.
  */
 @Service
 public class DocumentIntelligenceService {
@@ -38,54 +43,81 @@ public class DocumentIntelligenceService {
     private final DocumentIntelligenceClient client;
     private final BlobContainerClient containerClient;
     private final DatosDocumentoRepository repository;
+    private final DocumentoProcesadoEventPublisher eventPublisher;
 
     public DocumentIntelligenceService(
             DocumentIntelligenceClient documentIntelligenceClient,
             BlobContainerClient evidenciasContainerClient,
-            DatosDocumentoRepository repository) {
+            DatosDocumentoRepository repository,
+            DocumentoProcesadoEventPublisher eventPublisher) {
         this.client = documentIntelligenceClient;
         this.containerClient = evidenciasContainerClient;
         this.repository = repository;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
      * Se ejecuta en un hilo aparte (eventoIngestaExecutor): la subida de la evidencia ya
-     * respondio al cliente antes de que esto corra. Cualquier fallo se registra sin
-     * propagarse, para no afectar una respuesta que ya se envio.
+     * respondio al cliente antes de que esto corra. Sea cual sea el resultado (exito o
+     * fallo), siempre queda un DatosDocumento consultable y una notificacion al analista;
+     * ningun escenario deja el documento en un limbo indistinguible de "aun no procesado".
      */
     @Async("eventoIngestaExecutor")
     public void extraerYAdjuntar(String transactionId, String blobName) {
+        DatosDocumento resultado;
         try {
-            byte[] contenido = containerClient.getBlobClient(blobName).downloadContent().toBytes();
-
-            SyncPoller<AnalyzeOperationDetails, AnalyzeResult> poller =
-                    client.beginAnalyzeDocument(MODELO_ID_DOCUMENTO, new AnalyzeDocumentOptions(contenido));
-            AnalyzeResult resultado = poller.getFinalResult();
-
-            List<AnalyzedDocument> documentos = resultado.getDocuments();
-            if (documentos.isEmpty()) {
-                log.warn("El reconocimiento documental no identifico datos estructurados en {} (transaccion {})",
-                        blobName, transactionId);
-                return;
-            }
-
-            Map<String, DocumentField> campos = documentos.get(0).getFields();
-
-            String nombre = Stream.of(valorTexto(campos, "FirstName"), valorTexto(campos, "LastName"))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.joining(" "));
-            String numeroIdentificacion = valorTexto(campos, "DocumentNumber");
-
-            Map<String, LocalDate> fechas = new LinkedHashMap<>();
-            agregarSiNoEsNulo(fechas, "nacimiento", valorFecha(campos, "DateOfBirth"));
-            agregarSiNoEsNulo(fechas, "vencimiento", valorFecha(campos, "DateOfExpiration"));
-
-            repository.save(new DatosDocumento(
-                    transactionId, blobName, nombre.isBlank() ? null : nombre, numeroIdentificacion, fechas, Instant.now()));
+            resultado = analizar(transactionId, blobName);
         } catch (Exception ex) {
             log.error("No se pudo extraer datos estructurados del documento {} de la transaccion {}",
                     blobName, transactionId, ex);
+            resultado = DatosDocumento.fallido(transactionId, blobName, motivoLegible(ex), Instant.now());
         }
+
+        try {
+            repository.save(resultado);
+            eventPublisher.notificarResultado(resultado);
+        } catch (Exception ex) {
+            log.error("No se pudo guardar/notificar el resultado del procesamiento documental de la transaccion {}",
+                    transactionId, ex);
+        }
+    }
+
+    private DatosDocumento analizar(String transactionId, String blobName) {
+        byte[] contenido = containerClient.getBlobClient(blobName).downloadContent().toBytes();
+
+        SyncPoller<AnalyzeOperationDetails, AnalyzeResult> poller =
+                client.beginAnalyzeDocument(MODELO_ID_DOCUMENTO, new AnalyzeDocumentOptions(contenido));
+        AnalyzeResult resultado = poller.getFinalResult();
+
+        List<AnalyzedDocument> documentos = resultado.getDocuments();
+        if (documentos.isEmpty()) {
+            log.warn("El reconocimiento documental no identifico datos estructurados en {} (transaccion {})",
+                    blobName, transactionId);
+            return DatosDocumento.fallido(
+                    transactionId, blobName,
+                    "El servicio no identifico datos estructurados en el documento (ilegible, incompleto o de formato inesperado).",
+                    Instant.now());
+        }
+
+        Map<String, DocumentField> campos = documentos.get(0).getFields();
+
+        String nombre = Stream.of(valorTexto(campos, "FirstName"), valorTexto(campos, "LastName"))
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining(" "));
+        String numeroIdentificacion = valorTexto(campos, "DocumentNumber");
+
+        Map<String, LocalDate> fechas = new LinkedHashMap<>();
+        agregarSiNoEsNulo(fechas, "nacimiento", valorFecha(campos, "DateOfBirth"));
+        agregarSiNoEsNulo(fechas, "vencimiento", valorFecha(campos, "DateOfExpiration"));
+
+        return DatosDocumento.completado(
+                transactionId, blobName, nombre.isBlank() ? null : nombre, numeroIdentificacion, fechas, Instant.now());
+    }
+
+    private String motivoLegible(Exception ex) {
+        String mensaje = ex.getMessage();
+        return "No se pudo procesar el documento (corrupto o formato inesperado): "
+                + (mensaje != null && !mensaje.isBlank() ? mensaje : ex.getClass().getSimpleName());
     }
 
     private void agregarSiNoEsNulo(Map<String, LocalDate> fechas, String clave, LocalDate valor) {
