@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
  * en todos los casos (exito o fallo) se debe notificar al analista.
  */
 @ExtendWith(MockitoExtension.class)
-class DocumentIntelligenceServiceTest {
+class AzureDocumentIntelligenceServiceTest {
 
     @Mock
     private DocumentIntelligenceClient client;
@@ -90,8 +90,8 @@ class DocumentIntelligenceServiceTest {
         campos.put("DateOfExpiration", campoFecha(LocalDate.of(2030, 1, 1)));
         when(analyzedDocument.getFields()).thenReturn(campos);
 
-        DocumentIntelligenceService service =
-                new DocumentIntelligenceService(client, containerClient, repository, eventPublisher);
+        AzureDocumentIntelligenceService service =
+                new AzureDocumentIntelligenceService(client, containerClient, repository, eventPublisher);
         service.extraerYAdjuntar("tx-1", "blob-1");
 
         DatosDocumento datos = repository.findByTransactionId("tx-1").orElseThrow();
@@ -115,8 +115,8 @@ class DocumentIntelligenceServiceTest {
         when(poller.getFinalResult()).thenReturn(analyzeResult);
         when(analyzeResult.getDocuments()).thenReturn(List.of());
 
-        DocumentIntelligenceService service =
-                new DocumentIntelligenceService(client, containerClient, repository, eventPublisher);
+        AzureDocumentIntelligenceService service =
+                new AzureDocumentIntelligenceService(client, containerClient, repository, eventPublisher);
         service.extraerYAdjuntar("tx-2", "blob-2");
 
         DatosDocumento datos = repository.findByTransactionId("tx-2").orElseThrow();
@@ -129,8 +129,8 @@ class DocumentIntelligenceServiceTest {
     void quedaConsultableComoFallidoSiElDocumentoEsIlegibleOCorrupto() {
         when(containerClient.getBlobClient("blob-3")).thenThrow(new RuntimeException("documento corrupto simulado"));
 
-        DocumentIntelligenceService service =
-                new DocumentIntelligenceService(client, containerClient, repository, eventPublisher);
+        AzureDocumentIntelligenceService service =
+                new AzureDocumentIntelligenceService(client, containerClient, repository, eventPublisher);
 
         service.extraerYAdjuntar("tx-3", "blob-3");
 
