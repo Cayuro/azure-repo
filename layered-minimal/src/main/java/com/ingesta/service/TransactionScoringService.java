@@ -1,6 +1,15 @@
 package com.ingesta.service;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Service;
+
 import com.ingesta.dto.RiesgoResponse;
+import com.ingesta.dto.TransactionScoreSummary;
 import com.ingesta.messaging.TransactionIngestedEvent;
 import com.ingesta.model.FraudCase;
 import com.ingesta.model.Transaction;
@@ -8,14 +17,7 @@ import com.ingesta.model.TransactionScore;
 import com.ingesta.repository.FraudCaseRepository;
 import com.ingesta.repository.TransactionRepository;
 import com.ingesta.repository.TransactionScoreRepository;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Service;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -103,5 +105,34 @@ public class TransactionScoringService {
         return scoreRepository.findByTransactionId(transactionId)
                 .map(score -> RiesgoResponse.of(score, fraudCaseRepository.findByTransactionId(transactionId)))
                 .orElseGet(() -> RiesgoResponse.pending(transactionId));
+    }
+
+    public RiesgoResponse updateFraudCaseStatus(String transactionId, String status) {
+        transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new com.ingesta.exception.TransactionNotFoundException(transactionId));
+
+        FraudCase fraudCase = fraudCaseRepository.findByTransactionId(transactionId)
+                .orElseThrow(() -> new com.ingesta.exception.FraudCaseNotFoundException(transactionId));
+
+        FraudCase updatedCase = new FraudCase(
+                fraudCase.caseId(),
+                fraudCase.transactionId(),
+                fraudCase.score(),
+                status,
+                fraudCase.openedAt(),
+                fraudCase.activations()
+        );
+        fraudCaseRepository.save(updatedCase);
+        return obtenerRiesgo(transactionId);
+    }
+
+    public List<TransactionScoreSummary> listarScores() {
+        return scoreRepository.findAll().stream()
+                .map(score -> new TransactionScoreSummary(
+                        score.transactionId(),
+                        score.score(),
+                        score.threshold(),
+                        true))
+                .toList();
     }
 }

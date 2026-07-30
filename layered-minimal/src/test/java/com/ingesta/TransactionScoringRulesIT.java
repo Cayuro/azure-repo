@@ -12,9 +12,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,8 +73,23 @@ class TransactionScoringRulesIT {
         assertTrue(score.activations().stream().anyMatch(activation -> activation.ruleId().equals("COMERCIO_RIESGO")));
     }
 
+    @Test
+    void shouldExposeAllScoresForDashboard() throws Exception {
+        postTransaction("tx-risk-list", "acc-risk-list", 100.00, 4.7110, -74.0721, "gambling", "2026-07-23T14:00:00Z");
+        awaitScore("tx-risk-list");
+
+        String response = mockMvc.perform(get("/api/v1/transactions/riesgos"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        assertTrue(response.contains("\"transactionId\":\"tx-risk-list\""));
+        assertTrue(response.contains("\"score\":20"));
+    }
+
     private void postTransaction(String transactionId, String accountId, double amount, double latitude, double longitude, String merchantCategory, String occurredAt) throws Exception {
-        String payload = """
+        String payload = String.format(Locale.US, """
                 {
                   "transactionId": "%s",
                   "accountId": "%s",
@@ -84,7 +101,15 @@ class TransactionScoringRulesIT {
                   "merchantId": "%s",
                   "merchantCategory": "%s"
                 }
-                """.formatted(transactionId, accountId, amount, occurredAt, latitude, longitude, transactionId + "-merchant", merchantCategory);
+                """,
+                transactionId,
+                accountId,
+                amount,
+                occurredAt,
+                latitude,
+                longitude,
+                transactionId + "-merchant",
+                merchantCategory);
 
         mockMvc.perform(post("/api/v1/transactions")
                         .contentType(MediaType.APPLICATION_JSON)

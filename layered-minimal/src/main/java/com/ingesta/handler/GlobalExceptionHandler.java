@@ -1,10 +1,7 @@
 package com.ingesta.handler;
 
-import com.ingesta.dto.ApiErrorResponse;
-import com.ingesta.exception.InvalidTransactionException;
-import com.ingesta.exception.TransactionNotFoundException;
-import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
-import jakarta.validation.ConstraintViolationException;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -13,7 +10,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-import java.util.List;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import com.ingesta.dto.ApiErrorResponse;
+import com.ingesta.exception.FraudCaseNotFoundException;
+import com.ingesta.exception.InvalidTransactionException;
+import com.ingesta.exception.TransactionNotFoundException;
+
+import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -62,6 +65,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleNotFound(TransactionNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiErrorResponse.of(HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), "Transaccion no encontrada"));
+    }
+
+    @ExceptionHandler(FraudCaseNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleFraudCaseNotFound(FraudCaseNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiErrorResponse.of(HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), "Caso de fraude no encontrado"));
     }
 
     @ExceptionHandler(Exception.class)

@@ -1,18 +1,20 @@
 package com.ingesta.service;
 
-import com.ingesta.dto.TransactionRequest;
-import com.ingesta.dto.TransactionResponse;
-import com.ingesta.exception.InvalidTransactionException;
-import com.ingesta.exception.TransactionNotFoundException;
-import com.ingesta.model.Transaction;
-import com.ingesta.repository.TransactionRepository;
-import com.ingesta.messaging.TransactionEventPublisher;
-import org.springframework.stereotype.Service;
-
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.springframework.stereotype.Service;
+
+import com.ingesta.dto.TransactionRequest;
+import com.ingesta.dto.TransactionResponse;
+import com.ingesta.exception.InvalidTransactionException;
+import com.ingesta.exception.TransactionNotFoundException;
+import com.ingesta.messaging.TransactionEventPublisher;
+import com.ingesta.model.Transaction;
+import com.ingesta.repository.TransactionRepository;
 
 @Service
 public class TransactionService {
@@ -21,6 +23,7 @@ public class TransactionService {
     private final TransactionEventPublisher eventPublisher;
     private final IngestaQueueEventPublisher ingestaQueueEventPublisher;
     private final Clock clock;
+    private final AtomicLong transactionSequence = new AtomicLong();
 
     public TransactionService(
             TransactionRepository repository,
@@ -36,11 +39,15 @@ public class TransactionService {
     public TransactionResponse ingest(TransactionRequest request) {
         validate(request);
 
+        String transactionId = request.transactionId() == null || request.transactionId().isBlank()
+                ? generateTransactionId()
+                : request.transactionId();
+
         Instant ingestedAt = Instant.now(clock);
         Instant occurredAt = (request.occurredAt() != null) ? request.occurredAt() : ingestedAt;
 
         Transaction transaction = new Transaction(
-                request.transactionId(),
+                transactionId,
                 request.accountId(),
                 request.amount(),
                 request.currency().toUpperCase(),
@@ -63,6 +70,10 @@ public class TransactionService {
         return new TransactionResponse(transaction.transactionId(), "RECIBIDA", transaction.ingestedAt());
     }
 
+    private String generateTransactionId() {
+        return "TXN-" + transactionSequence.incrementAndGet();
+    }
+
     public Transaction getById(String transactionId) {
         return repository.findById(transactionId)
                 .orElseThrow(() -> new TransactionNotFoundException(transactionId));
@@ -74,9 +85,6 @@ public class TransactionService {
 
     private void validate(TransactionRequest request) {
         List<String> errors = new ArrayList<>();
-        if (request.occurredAt() != null && request.occurredAt().isAfter(Instant.now(clock))) {
-            errors.add("occurredAt no puede ser futura");
-        }
         if (!errors.isEmpty()) {
             throw new InvalidTransactionException("La transaccion no cumple el contrato", errors);
         }

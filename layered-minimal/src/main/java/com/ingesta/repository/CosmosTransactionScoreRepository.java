@@ -7,7 +7,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.StreamSupport;
 
 /**
  * Implementación de TransactionScoreRepository respaldada por Azure Cosmos DB.
@@ -33,5 +35,12 @@ public class CosmosTransactionScoreRepository implements TransactionScoreReposit
     public Optional<TransactionScore> findByTransactionId(String transactionId) {
         return springRepo.findByTransactionId(transactionId)
                 .map(TransactionScoreEntity::toDomain);
+    }
+
+    @Override
+    public List<TransactionScore> findAll() {
+        return StreamSupport.stream(springRepo.findAll().spliterator(), false)
+                .map(TransactionScoreEntity::toDomain)
+                .toList();
     }
 }

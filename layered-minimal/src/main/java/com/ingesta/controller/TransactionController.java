@@ -1,9 +1,27 @@
 package com.ingesta.controller;
 
+import java.io.IOException;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.ingesta.dto.EvidenciaResponse;
 import com.ingesta.dto.RiesgoResponse;
 import com.ingesta.dto.TransactionRequest;
 import com.ingesta.dto.TransactionResponse;
+import com.ingesta.dto.TransactionScoreSummary;
+import com.ingesta.dto.UpdateFraudCaseStatusRequest;
 import com.ingesta.model.DatosDocumento;
 import com.ingesta.model.Transaction;
 import com.ingesta.repository.DatosDocumentoRepository;
@@ -11,24 +29,11 @@ import com.ingesta.service.DocumentIntelligenceService;
 import com.ingesta.service.EvidenciaService;
 import com.ingesta.service.TransactionScoringService;
 import com.ingesta.service.TransactionService;
-import jakarta.validation.Valid;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/transactions")
@@ -94,6 +99,26 @@ public class TransactionController {
     public ResponseEntity<RiesgoResponse> getRiesgo(@PathVariable String transactionId) {
         service.getById(transactionId);
         return ResponseEntity.ok(scoringService.obtenerRiesgo(transactionId));
+    }
+
+    @Operation(summary = "Actualiza el estado del caso de fraude")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Estado actualizado"),
+            @ApiResponse(responseCode = "404", description = "Transaccion o caso no encontrado")
+    })
+    @PutMapping("/{transactionId}/status")
+    public ResponseEntity<RiesgoResponse> updateFraudCaseStatus(
+            @PathVariable String transactionId,
+            @RequestBody UpdateFraudCaseStatusRequest request) {
+        service.getById(transactionId);
+        return ResponseEntity.ok(scoringService.updateFraudCaseStatus(transactionId, request.status()));
+    }
+
+    @Operation(summary = "Lista los riesgos calculados de todas las transacciones")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Listado devuelto")})
+    @GetMapping("/riesgos")
+    public ResponseEntity<List<TransactionScoreSummary>> listScores() {
+        return ResponseEntity.ok(scoringService.listarScores());
     }
 
     @Operation(summary = "Consulta los datos estructurados extraidos de las evidencias de una transaccion")

@@ -3,6 +3,7 @@ package com.ingesta.repository;
 import com.ingesta.model.TransactionScore;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,5 +21,10 @@ public class InMemoryTransactionScoreRepository implements TransactionScoreRepos
     @Override
     public Optional<TransactionScore> findByTransactionId(String transactionId) {
         return Optional.ofNullable(store.get(transactionId));
+    }
+
+    @Override
+    public List<TransactionScore> findAll() {
+        return List.copyOf(store.values());
     }
 }

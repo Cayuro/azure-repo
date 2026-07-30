@@ -1,13 +1,16 @@
 package com.ingesta.repository;
 
-import com.ingesta.model.FraudCase;
-import org.springframework.stereotype.Repository;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Repository;
+
+import com.ingesta.model.FraudCase;
+
 @Repository
+@Profile("local")
 public class InMemoryFraudCaseRepository implements FraudCaseRepository {
 
     private final Map<String, FraudCase> store = new ConcurrentHashMap<>();
