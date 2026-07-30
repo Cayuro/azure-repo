@@ -20,7 +20,6 @@ import com.ingesta.dto.EvidenciaResponse;
 import com.ingesta.dto.RiesgoResponse;
 import com.ingesta.dto.TransactionRequest;
 import com.ingesta.dto.TransactionResponse;
-import com.ingesta.dto.TransactionScoreSummary;
 import com.ingesta.dto.UpdateFraudCaseStatusRequest;
 import com.ingesta.model.DatosDocumento;
 import com.ingesta.model.Transaction;
@@ -117,7 +116,7 @@ public class TransactionController {
     @Operation(summary = "Lista los riesgos calculados de todas las transacciones")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Listado devuelto")})
     @GetMapping("/riesgos")
-    public ResponseEntity<List<TransactionScoreSummary>> listScores() {
+    public ResponseEntity<List<RiesgoResponse>> listScores() {
         return ResponseEntity.ok(scoringService.listarScores());
     }
 
