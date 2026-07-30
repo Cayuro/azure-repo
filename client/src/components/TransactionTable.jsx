@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { formatCurrency, formatDateTime, maskIdentifier } from '../utils/formatters';
 
 function TransactionTable({ transactions, selectedId, loading, error, onSelect, risksById = {} }) {
@@ -50,7 +51,7 @@ function TransactionTable({ transactions, selectedId, loading, error, onSelect, 
             {transactions.map((tx) => {
               const risk = risksById?.[tx.transactionId];
               const score = risk?.score ?? null;
-              const status = risk?.fraudCase?.status || '—';
+              const fraudCase = risk?.fraudCase;
               const riskClass = score == null ? 'neutral' : getRiskClass(score);
               const riskLabel = score == null ? '—' : getRiskLabel(score);
 
@@ -88,7 +89,17 @@ function TransactionTable({ transactions, selectedId, loading, error, onSelect, 
                       <span className="score-label">{riskLabel}</span>
                     </span>
                   </td>
-                  <td>{status}</td>
+                  <td>
+                    {fraudCase ? (
+                      <Link
+                        to={`/cases/${fraudCase.caseId}`}
+                        state={{ transaction: tx, risk, evidences: [] }}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {fraudCase.status}
+                      </Link>
+                    ) : '—'}
+                  </td>
                   <td>{tx.merchantCategory}</td>
                 </tr>
               );

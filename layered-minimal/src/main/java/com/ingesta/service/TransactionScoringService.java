@@ -9,7 +9,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import com.ingesta.dto.RiesgoResponse;
-import com.ingesta.dto.TransactionScoreSummary;
 import com.ingesta.messaging.TransactionIngestedEvent;
 import com.ingesta.model.FraudCase;
 import com.ingesta.model.Transaction;
@@ -126,13 +125,9 @@ public class TransactionScoringService {
         return obtenerRiesgo(transactionId);
     }
 
-    public List<TransactionScoreSummary> listarScores() {
+    public List<RiesgoResponse> listarScores() {
         return scoreRepository.findAll().stream()
-                .map(score -> new TransactionScoreSummary(
-                        score.transactionId(),
-                        score.score(),
-                        score.threshold(),
-                        true))
+                .map(score -> RiesgoResponse.of(score, fraudCaseRepository.findByTransactionId(score.transactionId())))
                 .toList();
     }
 }

@@ -4,10 +4,10 @@ import { createTransaction, getErrorMessage } from '../services/api';
 
 const initialState = {
   accountId: 'ACC-1001',
-  amount: '2500',
+  amount: '',
   currency: 'COP',
-  latitude: '4.7110',
-  longitude: '-74.0721',
+  latitude: '',
+  longitude: '',
   merchantId: 'MER-1001',
   merchantCategory: 'GAMBLING'
 };
@@ -77,7 +77,7 @@ function TransactionForm() {
         </label>
         <label>
           amount
-          <input name="amount" type="number" step="0.01" min="0.01" value={form.amount} onChange={handleChange} required />
+          <input name="amount" type="number" step="0.01" min="0.01" placeholder="2500" value={form.amount} onChange={handleChange} required />
         </label>
         <label>
           currency
@@ -89,11 +89,11 @@ function TransactionForm() {
         </label>
         <label>
           latitude
-          <input name="latitude" type="number" step="0.0001" value={form.latitude} onChange={handleChange} required />
+          <input name="latitude" type="number" step="0.0001" placeholder="4.7110" value={form.latitude} onChange={handleChange} required />
         </label>
         <label>
           longitude
-          <input name="longitude" type="number" step="0.0001" value={form.longitude} onChange={handleChange} required />
+          <input name="longitude" type="number" step="0.0001" placeholder="-74.0721" value={form.longitude} onChange={handleChange} required />
         </label>
         <label>
           merchantId
