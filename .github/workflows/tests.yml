@@ -1,0 +1,44 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    name: Banco de pruebas (sin dependencias de Azure)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: layered-minimal
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'microsoft'
+          cache: maven
+
+      # Ejecuta unicamente las clases *Test: por convencion de Surefire las *IT
+      # quedan fuera. Esa separacion es deliberada -- las *IT necesitan Cosmos,
+      # Storage o Azurite y no pueden correr en un runner sin credenciales,
+      # mientras que este banco corre en cualquier parte y en segundos.
+      - name: Run unit tests
+        run: mvn --batch-mode test
+
+      - name: Publish test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: layered-minimal/target/surefire-reports/
+          if-no-files-found: ignore

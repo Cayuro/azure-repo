@@ -108,7 +108,7 @@ public class TransactionController {
     @PutMapping("/{transactionId}/status")
     public ResponseEntity<RiesgoResponse> updateFraudCaseStatus(
             @PathVariable String transactionId,
-            @RequestBody UpdateFraudCaseStatusRequest request) {
+            @Valid @RequestBody UpdateFraudCaseStatusRequest request) {
         service.getById(transactionId);
         return ResponseEntity.ok(scoringService.updateFraudCaseStatus(transactionId, request.status()));
     }

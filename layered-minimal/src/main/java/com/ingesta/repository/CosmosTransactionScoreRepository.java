@@ -15,9 +15,18 @@ import java.util.stream.StreamSupport;
  * Implementación de TransactionScoreRepository respaldada por Azure Cosmos DB.
  *
  * @Primary indica a Spring que use este bean en lugar de InMemoryTransactionScoreRepository.
+ *
+ * VULN 4 (ALTO): mismo bug e igual fix que CosmosTransactionRepository (ver su javadoc
+ * para el detalle completo) -- el import de ConditionalOnProperty nunca se aplicaba, asi
+ * que este bean se activaba siempre, incluso en tests, contra la cuenta de produccion.
+ * Se condiciona a "spring.cloud.azure.cosmos.enabled", la misma propiedad que el
+ * auto-configure de Spring Cloud Azure usa para activar el CosmosClient y los
+ * repositorios Spring Data Cosmos; sin ella, el unico TransactionScoreRepository
+ * disponible es InMemoryTransactionScoreRepository (siempre registrado).
  */
 @Primary
 @Repository
+@ConditionalOnProperty(prefix = "spring.cloud.azure.cosmos", name = "enabled", havingValue = "true")
 public class CosmosTransactionScoreRepository implements TransactionScoreRepository {
 
     private final CosmosScoreSpringRepo springRepo;
