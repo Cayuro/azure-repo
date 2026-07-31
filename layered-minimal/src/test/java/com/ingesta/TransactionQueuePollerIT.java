@@ -18,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -44,6 +45,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Usa Azurite (Testcontainers) para tener una cola real sin depender de Azure/credenciales.
  */
 @Testcontainers
+// El perfil por defecto de application.properties es "prod", que activa Cosmos y el
+// repositorio JPA contra la infraestructura real. Los tests se fijan a "local" para
+// quedarse con los repositorios en memoria y no tocar Azure (VULN 4).
+@ActiveProfiles("local")
 @SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 class TransactionQueuePollerIT {
 

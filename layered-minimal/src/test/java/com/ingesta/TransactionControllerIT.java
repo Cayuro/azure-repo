@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.nio.charset.StandardCharsets;
 
@@ -17,6 +18,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// El perfil por defecto de application.properties es "prod", que activa Cosmos y el
+// repositorio JPA contra la infraestructura real. Los tests se fijan a "local" para
+// quedarse con los repositorios en memoria y no tocar Azure (VULN 4).
+@ActiveProfiles("local")
 @SpringBootTest
 @AutoConfigureMockMvc
 class TransactionControllerIT {
