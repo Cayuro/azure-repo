@@ -5,6 +5,7 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobProperties;
 import com.ingesta.dto.EvidenciaDescargada;
+import com.ingesta.exception.EvidenciaInvalidaException;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -33,7 +34,7 @@ public class EvidenciaService {
 
         // 1. CONTROL DE RIESGO: validar limite estricto de tamano de archivo (evita DoS)
         if (fileSize > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("El archivo excede el limite permitido de 5 Megabytes.");
+            throw new EvidenciaInvalidaException("El archivo excede el limite permitido de 5 Megabytes.");
         }
 
         BufferedInputStream bufferedStream = new BufferedInputStream(fileStream);
@@ -44,7 +45,7 @@ public class EvidenciaService {
         bufferedStream.reset();
 
         if (bytesRead < 4) {
-            throw new IllegalArgumentException("Archivo corrupto o demasiado pequeno.");
+            throw new EvidenciaInvalidaException("Archivo corrupto o demasiado pequeno.");
         }
 
         // 2. VALIDACION DE CONTENIDO REAL: comprobar magic numbers, no la extension declarada por el cliente
@@ -54,7 +55,7 @@ public class EvidenciaService {
         } else if (Arrays.equals(firstFourBytes, MAGIC_PNG)) {
             extension = "png";
         } else {
-            throw new IllegalArgumentException("Tipo de archivo invalido. Solo se admiten PDFs o imagenes PNG reales.");
+            throw new EvidenciaInvalidaException("Tipo de archivo invalido. Solo se admiten PDFs o imagenes PNG reales.");
         }
 
         // 3. MITIGACION DE ATAQUES: el nombre original del archivo se descarta por completo
@@ -81,7 +82,7 @@ public class EvidenciaService {
 
         BlobClient blobClient = containerClient.getBlobClient(blobName);
         if (!blobClient.exists()) {
-            throw new IllegalArgumentException("Evidencia no encontrada para la transaccion indicada.");
+            throw new EvidenciaInvalidaException("Evidencia no encontrada para la transaccion indicada.");
         }
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -99,7 +100,7 @@ public class EvidenciaService {
     private void validateBlobName(String transactionId, String blobName) {
         String prefix = blobPrefix(transactionId);
         if (blobName == null || !blobName.startsWith(prefix) || blobName.contains("/") || blobName.contains("\\") || blobName.contains("..")) {
-            throw new IllegalArgumentException("Nombre de evidencia invalido para la transaccion indicada.");
+            throw new EvidenciaInvalidaException("Nombre de evidencia invalido para la transaccion indicada.");
         }
     }
 
