@@ -28,6 +28,7 @@ public class TransactionScoringService {
     private final FraudCaseRepository fraudCaseRepository;
     private final TransactionScoringEngine scoringEngine;
     private final FraudCaseEventPublisher fraudCaseEventPublisher;
+    private final FraudAlertEmailPublisher fraudAlertEmailPublisher;
     private final Clock clock;
 
     // Guarda atomica: evita que el evento in-process y el poller de la cola procesen la
@@ -41,12 +42,14 @@ public class TransactionScoringService {
             FraudCaseRepository fraudCaseRepository,
             TransactionScoringEngine scoringEngine,
             FraudCaseEventPublisher fraudCaseEventPublisher,
+            FraudAlertEmailPublisher fraudAlertEmailPublisher,
             Clock clock) {
         this.transactionRepository = transactionRepository;
         this.scoreRepository = scoreRepository;
         this.fraudCaseRepository = fraudCaseRepository;
         this.scoringEngine = scoringEngine;
         this.fraudCaseEventPublisher = fraudCaseEventPublisher;
+        this.fraudAlertEmailPublisher = fraudAlertEmailPublisher;
         this.clock = clock;
     }
 
@@ -97,6 +100,9 @@ public class TransactionScoringService {
                         score.activations());
                 fraudCaseRepository.save(fraudCase);
                 fraudCaseEventPublisher.publicarCasoFraude(fraudCase);
+                // Notificacion por correo al analista: cola distinta y consumidor distinto
+                // (una Azure Function), independiente del evento de caso de arriba.
+                fraudAlertEmailPublisher.publicarAlerta(transaction, score);
             }
         } finally {
             transaccionesEnProceso.remove(transactionId);

@@ -54,6 +54,7 @@ class TransactionScoringServiceTest {
     private FraudCaseRepository fraudCaseRepository;
     private TransactionScoringEngine scoringEngine;
     private FraudCaseEventPublisher fraudCaseEventPublisher;
+    private FraudAlertEmailPublisher fraudAlertEmailPublisher;
     private TransactionScoringService service;
 
     @BeforeEach
@@ -63,10 +64,11 @@ class TransactionScoringServiceTest {
         fraudCaseRepository = mock(FraudCaseRepository.class);
         scoringEngine = mock(TransactionScoringEngine.class);
         fraudCaseEventPublisher = mock(FraudCaseEventPublisher.class);
+        fraudAlertEmailPublisher = mock(FraudAlertEmailPublisher.class);
 
         service = new TransactionScoringService(
                 transactionRepository, scoreRepository, fraudCaseRepository,
-                scoringEngine, fraudCaseEventPublisher, RELOJ_FIJO);
+                scoringEngine, fraudCaseEventPublisher, fraudAlertEmailPublisher, RELOJ_FIJO);
 
         when(transactionRepository.findByAccountId(any())).thenReturn(List.of());
     }
@@ -166,7 +168,7 @@ class TransactionScoringServiceTest {
 
         TransactionScoringService servicioConcurrente = new TransactionScoringService(
                 transactionRepoConDemora, scoreRepoReal, fraudCaseRepoReal,
-                motorAltoRiesgo, fraudCaseEventPublisher, RELOJ_FIJO);
+                motorAltoRiesgo, fraudCaseEventPublisher, fraudAlertEmailPublisher, RELOJ_FIJO);
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
