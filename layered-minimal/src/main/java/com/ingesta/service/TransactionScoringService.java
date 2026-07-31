@@ -3,6 +3,7 @@ package com.ingesta.service;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.context.event.EventListener;
@@ -59,32 +60,34 @@ public class TransactionScoringService {
     }
 
     /**
-     * Calcula el score y abre el caso de fraude si corresponde. Idempotente: si la
-     * transaccion ya fue procesada (por el evento in-process o por un intento anterior
-     * de {@code TransactionQueuePoller}), no se reprocesa. Esto permite que ambos
-     * caminos (evento in-process y el consumidor real de cola-transacciones-ingesta)
-     * disparen este metodo sin generar scores/casos duplicados, y que un mensaje
-     * reentregado tras un crash a mitad de proceso (semantica at-least-once) se procese
-     * como no-op en vez de duplicar el efecto.
+     * Calcula el score y abre el caso de fraude si corresponde. Idempotente frente a
+     * reintentos (evento in-process, poller de cola, o un mensaje reentregado tras un
+     * crash a mitad de proceso): la condicion de "ya no hay nada pendiente" no es solo
+     * "existe un score" -- si el score ya supera el umbral pero el caso de fraude aun no
+     * se creo (el proceso murio justo entre guardar el score y crear/publicar el caso),
+     * SI hay trabajo pendiente y este metodo debe completarlo, nunca saltarselo. Saltarlo
+     * perdia para siempre el caso de fraude exacto que el sistema existe para detectar.
+     *
+     * La guarda de concurrencia (transaccionesEnProceso.add) se reserva ANTES de leer
+     * cualquier estado, no despues: si se leyera antes, un hilo podria pasar esa lectura,
+     * desprogramarse, dejar que otro hilo procese la transaccion COMPLETA (incluyendo el
+     * remove() de su finally), y solo entonces hacer su propio add() con exito --
+     * reprocesando: score sobrescrito con otro scoredAt, un FraudCase duplicado con otro
+     * caseId, un segundo evento publicado (dos investigaciones abiertas por el mismo
+     * hecho). Reservando el turno primero, esa ventana no existe: mientras un hilo esta
+     * dentro, cualquier otro con el mismo transactionId sale de inmediato sin tocar nada.
      */
     public void procesarTransaccion(Transaction transaction) {
         String transactionId = transaction.transactionId();
-        if (scoreRepository.findByTransactionId(transactionId).isPresent()) {
-            return;
-        }
+
         if (!transaccionesEnProceso.add(transactionId)) {
             return; // otro hilo (evento in-process o poller) ya esta procesando esta transaccion
         }
 
         try {
-            List<Transaction> history = transactionRepository.findByAccountId(transaction.accountId()).stream()
-                    .filter(item -> !item.transactionId().equals(transactionId))
-                    .toList();
+            TransactionScore score = obtenerOCalcularScore(transaction, transactionId);
 
-            TransactionScore score = scoringEngine.score(transaction, history);
-            scoreRepository.save(score);
-
-            if (score.score() > score.threshold()) {
+            if (score.score() > score.threshold() && fraudCaseRepository.findByTransactionId(transactionId).isEmpty()) {
                 FraudCase fraudCase = new FraudCase(
                         UUID.randomUUID().toString(),
                         transactionId,
@@ -98,6 +101,26 @@ public class TransactionScoringService {
         } finally {
             transaccionesEnProceso.remove(transactionId);
         }
+    }
+
+    /**
+     * Reutiliza el score ya guardado si existe (un reintento nunca debe recalcular ni
+     * reemplazar un score existente, cambiando su scoredAt) y solo lo calcula de nuevo
+     * cuando de verdad es la primera vez que se procesa esta transaccion.
+     */
+    private TransactionScore obtenerOCalcularScore(Transaction transaction, String transactionId) {
+        Optional<TransactionScore> scoreExistente = scoreRepository.findByTransactionId(transactionId);
+        if (scoreExistente.isPresent()) {
+            return scoreExistente.get();
+        }
+
+        List<Transaction> history = transactionRepository.findByAccountId(transaction.accountId()).stream()
+                .filter(item -> !item.transactionId().equals(transactionId))
+                .toList();
+
+        TransactionScore score = scoringEngine.score(transaction, history);
+        scoreRepository.save(score);
+        return score;
     }
 
     public RiesgoResponse obtenerRiesgo(String transactionId) {
