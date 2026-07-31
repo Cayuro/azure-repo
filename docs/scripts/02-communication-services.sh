@@ -1,25 +1,32 @@
 #!/usr/bin/env bash
 # =============================================================
-# Azure Communication Services - Email (dominio administrado por Azure)
+# SERVICIO 2/5 - Azure Communication Services (Email)
 #
-# Un solo script, sin variante de VNet: Azure Communication Services /
-# Email no soporta Private Endpoint hoy, asi que la llamada siempre sale
-# por el endpoint publico de ACS, tengas o no VNet Integration en tus
-# otros recursos. "Meterlo dentro de la VNet" no es una opcion disponible
-# actualmente, asi que no tiene sentido duplicar este script.
+# Crea los tres recursos que hacen falta para poder enviar correo:
+#   1. Communication Services  -> da el connection string
+#   2. Email Communication Services -> contenedor del dominio de envio
+#   3. Dominio "AzureManagedDomain" -> subdominio *.azurecomm.net generado y
+#      verificado por Azure, sin tocar DNS propio
+# y vincula (3) con (1), sin lo cual ACS no puede usar el dominio.
 #
-# Usa el dominio por defecto de Azure (AzureManagedDomain): un subdominio
-# tipo xxxxxxxx.azurecomm.net ya verificado, sin tocar tu DNS. El remitente
-# queda fijo como DoNotReply@<ese-subdominio>.azurecomm.net.
+# No depende de ningun otro script: puede correrse en cualquier momento,
+# aunque el orden sugerido lo pone en segundo lugar porque su salida
+# (EmailSenderAddress, connection string) se necesita en 05-app-settings.sh.
 #
-# Generico: solo cambia las variables de abajo.
+# Ver decisiones 5 y 6 en ../01-servicios-y-arquitectura.md (por que dominio
+# administrado y por que ACS no tiene variante con VNet).
 # =============================================================
 set -euo pipefail
 
-RG="${RG:?export RG=<resource-group>}"
-DATA_LOCATION="${DATA_LOCATION:-United States}"   # United States | Europe | UK | Brazil | Asia Pacific | Australia | Canada | ...
-ACS_NAME="${ACS_NAME:?export ACS_NAME=<nombre-communication-services>}"
-EMAIL_SERVICE_NAME="${EMAIL_SERVICE_NAME:?export EMAIL_SERVICE_NAME=<nombre-email-service>}"
+ENV_FILE="${ENV_FILE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.env}"
+if [ -f "$ENV_FILE" ]; then
+  set -a; source "$ENV_FILE"; set +a
+fi
+
+RG="${RG:?Falta RG (definelo en docs/.env)}"
+ACS_NAME="${ACS_NAME:?Falta ACS_NAME}"
+EMAIL_SERVICE_NAME="${EMAIL_SERVICE_NAME:?Falta EMAIL_SERVICE_NAME}"
+DATA_LOCATION="${DATA_LOCATION:-United States}"
 
 echo ">> Extension 'communication' de az cli (si falta)..."
 az extension add --name communication --only-show-errors 2>/dev/null || true
@@ -27,10 +34,13 @@ az extension add --name communication --only-show-errors 2>/dev/null || true
 echo ">> Resource Group: verificando $RG..."
 az group show --name "$RG" --output none
 
+# El Resource Provider suele no estar registrado en suscripciones que nunca
+# usaron ACS, y el error que da despues es confuso. Registrarlo requiere
+# permisos a nivel de SUSCRIPCION (no basta Contributor sobre el RG).
 echo ">> Resource Provider 'Microsoft.Communication': verificando registro..."
 RP_STATE=$(az provider show --namespace Microsoft.Communication --query registrationState -o tsv 2>/dev/null || echo "NotRegistered")
 if [ "$RP_STATE" != "Registered" ]; then
-  echo "   No esta registrado en esta suscripcion, registrando (puede tardar 1-2 min)..."
+  echo "   No esta registrado, registrando (puede tardar 1-2 min)..."
   az provider register --namespace Microsoft.Communication
   until [ "$(az provider show --namespace Microsoft.Communication --query registrationState -o tsv)" == "Registered" ]; do
     echo "   ... esperando registro"
@@ -39,12 +49,9 @@ if [ "$RP_STATE" != "Registered" ]; then
 fi
 echo "   OK, registrado."
 
-# Nota: estos "create" son operaciones PUT de ARM, ya idempotentes por si solas
-# (correr el script otra vez con los mismos valores no falla). Por eso, a
-# diferencia de otros scripts de esta carpeta, aqui NO se enmascara el error
-# con `|| echo "ya existia"`: si algo falla (RP no registrado, nombre
-# invalido, permisos, cuota, etc.) es mejor ver el error real de az cli.
-
+# Los "create" de abajo son PUT de ARM, idempotentes por si solos: volver a
+# correr el script con los mismos valores no falla. Por eso no se enmascara
+# el error con '|| echo "ya existia"', que esconderia fallos reales.
 echo ">> Communication Services: creando/verificando $ACS_NAME..."
 az communication create \
   --name "$ACS_NAME" \
@@ -83,8 +90,7 @@ FROM_SENDER_DOMAIN=$(az communication email domain show \
   --query "fromSenderDomain" -o tsv)
 
 echo ">> Vinculando el dominio al recurso Communication Services..."
-# Si tu version de az cli no reconoce --linked-domains, alternativa via
-# generic update:
+# Si tu version de az cli no reconoce --linked-domains:
 #   ACS_ID=$(az communication show --name "$ACS_NAME" -g "$RG" --query id -o tsv)
 #   az resource update --ids "$ACS_ID" --set "properties.linkedDomains=[\"$DOMAIN_ID\"]"
 az communication update \
@@ -101,15 +107,16 @@ CONNECTION_STRING=$(az communication list-key \
 echo ""
 echo "==================== RESUMEN ===================="
 echo "Communication Services : $ACS_NAME"
-echo "Email Service           : $EMAIL_SERVICE_NAME"
-echo "Dominio                 : DoNotReply@${FROM_SENDER_DOMAIN}"
+echo "Email Service          : $EMAIL_SERVICE_NAME"
 echo ""
-echo "App settings para la Function:"
+echo "Para local.settings.json / App Settings:"
 echo "  EmailSenderAddress=DoNotReply@${FROM_SENDER_DOMAIN}"
 echo ""
 echo "CommunicationServicesConnectionString es SECRETO (se imprime abajo una"
-echo "sola vez) - no lo dejes en logs ni consola compartida. Para volver a"
-echo "consultarlo despues:"
+echo "sola vez). No lo pegues en chats, tickets ni lo subas al repo."
+echo "Para volver a consultarlo:"
 echo "  az communication list-key --name $ACS_NAME -g $RG --query primaryConnectionString -o tsv"
-echo "==================================================="
+echo ""
+echo "Siguiente paso: bash docs/scripts/03-app-service-plan.sh"
+echo "================================================="
 echo "$CONNECTION_STRING"

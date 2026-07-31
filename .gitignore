@@ -1,0 +1,5 @@
+# Variables locales de los scripts de docs/scripts (docs/.env.example si se versiona)
+.env
+
+# Archivos de bloqueo de LibreOffice / editores de oficina
+.~lock.*#
