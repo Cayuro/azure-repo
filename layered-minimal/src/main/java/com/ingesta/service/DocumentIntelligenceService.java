@@ -114,10 +114,23 @@ public class DocumentIntelligenceService {
                 transactionId, blobName, nombre.isBlank() ? null : nombre, numeroIdentificacion, fechas, Instant.now());
     }
 
+    /**
+     * VULN 5 (MEDIO, fuga de informacion interna): antes se concatenaba ex.getMessage()
+     * -- el mensaje crudo del SDK de Azure -- en motivoFallo, que se guarda en
+     * DatosDocumento y se devuelve tal cual por la API publica GET /{id}/datos-documento.
+     * Las excepciones de SDKs de nube suelen incluir endpoints, nombres de recursos,
+     * codigos de error internos, etc. (p.ej. "https://.../cognitiveservices...", nombres
+     * de contenedores), informacion que un atacante puede usar para reconocimiento de la
+     * infraestructura.
+     *
+     * FIX: motivoFallo pasa a ser SIEMPRE un mensaje de dominio fijo, sin datos del SDK.
+     * El detalle real de la excepcion ya se registra completo (mensaje + stacktrace) en
+     * el log.error de extraerYAdjuntar antes de llegar aqui -- ahi es donde debe
+     * consultarse para depurar, no en la respuesta HTTP publica.
+     */
     private String motivoLegible(Exception ex) {
-        String mensaje = ex.getMessage();
-        return "No se pudo procesar el documento (corrupto o formato inesperado): "
-                + (mensaje != null && !mensaje.isBlank() ? mensaje : ex.getClass().getSimpleName());
+        return "No se pudo procesar el documento (corrupto o formato inesperado). "
+                + "El detalle tecnico quedo registrado en los logs internos.";
     }
 
     private void agregarSiNoEsNulo(Map<String, LocalDate> fechas, String clave, LocalDate valor) {

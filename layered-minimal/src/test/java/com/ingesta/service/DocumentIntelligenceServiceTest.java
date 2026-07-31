@@ -136,7 +136,38 @@ class DocumentIntelligenceServiceTest {
 
         DatosDocumento datos = repository.findByTransactionId("tx-3").orElseThrow();
         assertEquals(DatosDocumento.EstadoProcesamiento.FALLIDO, datos.estado());
-        assertTrue(datos.motivoFallo().contains("documento corrupto simulado"));
+        assertTrue(datos.motivoFallo() != null && !datos.motivoFallo().isBlank());
+        verify(eventPublisher, times(1)).notificarResultado(datos);
+    }
+
+    /**
+     * VULN 5 (MEDIO, fuga de informacion interna): motivoFallo se devuelve tal cual por
+     * GET /{id}/datos-documento (API publica). Antes incluia ex.getMessage() del SDK de
+     * Azure sin filtrar -- este test fija exactamente lo contrario: el mensaje crudo de
+     * la excepcion NUNCA debe llegar al campo publico, sin importar que tan sensible sea
+     * (aqui se simula un mensaje con datos de infraestructura, como haria una excepcion
+     * real de un SDK de nube).
+     */
+    @Test
+    void elMotivoFalloPublicoNuncaExponeElMensajeCrudoDelSdkDeAzure() {
+        String detalleInternoSensible =
+                "CosmosException: endpoint https://cognitiveservices-prod.azure.com inalcanzable, key=abc123";
+        when(containerClient.getBlobClient("blob-4")).thenThrow(new RuntimeException(detalleInternoSensible));
+
+        DocumentIntelligenceService service =
+                new DocumentIntelligenceService(client, containerClient, repository, eventPublisher);
+
+        service.extraerYAdjuntar("tx-4", "blob-4");
+
+        DatosDocumento datos = repository.findByTransactionId("tx-4").orElseThrow();
+        assertEquals(DatosDocumento.EstadoProcesamiento.FALLIDO, datos.estado());
+        assertTrue(datos.motivoFallo() != null && !datos.motivoFallo().isBlank());
+        org.junit.jupiter.api.Assertions.assertFalse(
+                datos.motivoFallo().contains(detalleInternoSensible),
+                "motivoFallo no debe contener el mensaje crudo de la excepcion");
+        org.junit.jupiter.api.Assertions.assertFalse(
+                datos.motivoFallo().toLowerCase().contains("cognitiveservices"),
+                "motivoFallo no debe filtrar nombres de recursos internos");
         verify(eventPublisher, times(1)).notificarResultado(datos);
     }
 
