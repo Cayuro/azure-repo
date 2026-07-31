@@ -8,6 +8,7 @@ import com.ingesta.model.TransactionScore;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Duration;
@@ -43,8 +44,9 @@ public class TransactionScoringEngine {
 
     private void activateVelocityRule(Transaction transaction, List<Transaction> history, List<RuleActivation> activations) {
         Instant windowStart = transaction.ingestedAt().minus(Duration.ofMinutes(properties.getVelocityWindowMinutes()));
+        Instant windowEnd = transaction.ingestedAt();
         long recentTransactions = history.stream()
-                .filter(item -> !item.ingestedAt().isBefore(windowStart))
+                .filter(item -> !item.ingestedAt().isBefore(windowStart) && !item.ingestedAt().isAfter(windowEnd))
                 .count() + 1;
         if (recentTransactions >= properties.getVelocityMinimumTransactions()) {
             activations.add(new RuleActivation(
@@ -63,10 +65,15 @@ public class TransactionScoringEngine {
             return;
         }
 
+        // Precision completa (MathContext.DECIMAL64) para el calculo: redondear a 2
+        // decimales ANTES de multiplicar por el multiplicador amplifica el error de
+        // redondeo x{multiplicador} y desplaza el umbral real, dando falsos
+        // negativos y falsos positivos cerca del limite. El redondeo a 2 decimales
+        // se reserva solo para el texto del detalle.
         BigDecimal average = history.stream()
                 .map(Transaction::amount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .divide(BigDecimal.valueOf(history.size()), 2, RoundingMode.HALF_UP);
+                .divide(BigDecimal.valueOf(history.size()), MathContext.DECIMAL64);
         BigDecimal thresholdAmount = average.multiply(BigDecimal.valueOf(properties.getAmountMultiplier()));
 
         if (transaction.amount().compareTo(thresholdAmount) > 0) {
@@ -75,15 +82,20 @@ public class TransactionScoringEngine {
                     properties.getAmountPoints(),
                     List.of(
                             "amount=" + transaction.amount(),
-                            "historicalAverage=" + average,
+                            "historicalAverage=" + average.setScale(2, RoundingMode.HALF_UP),
                             "multiplier=" + properties.getAmountMultiplier()
                     )));
         }
     }
 
     private void activateGeoImpossibleRule(Transaction transaction, List<Transaction> history, List<RuleActivation> activations) {
+        // Desempate estable por transactionId: sin el thenComparing, en caso de
+        // empate de instante Stream.max devuelve "el primero encontrado", y ese
+        // orden depende de como el repositorio entregue el historial (hash), asi
+        // que el resultado era intermitente entre ejecuciones equivalentes.
         Transaction lastTransaction = history.stream()
-                .max(Comparator.comparing(Transaction::ingestedAt))
+                .max(Comparator.comparing(Transaction::ingestedAt)
+                        .thenComparing(Transaction::transactionId))
                 .orElse(null);
         if (lastTransaction == null) {
             return;
@@ -96,7 +108,15 @@ public class TransactionScoringEngine {
                 transaction.longitude());
 
         long elapsedSeconds = Duration.between(lastTransaction.ingestedAt(), transaction.ingestedAt()).toSeconds();
-        if (elapsedSeconds <= 0) {
+        if (elapsedSeconds < 0) {
+            // No se puede razonar sobre el orden temporal: el historial trae una
+            // transaccion "mas reciente" que en realidad ocurre despues de la
+            // actual (reproceso asincrono). Tratarlo como +1s inflaba la velocidad
+            // al maximo y generaba un falso positivo; en su lugar no evaluamos la
+            // regla para este par.
+            return;
+        }
+        if (elapsedSeconds == 0) {
             elapsedSeconds = 1;
         }
 
@@ -115,8 +135,8 @@ public class TransactionScoringEngine {
 
     private void activateMerchantRiskRule(Transaction transaction, List<RuleActivation> activations) {
         boolean riskyCategory = properties.getRiskMerchantCategories().stream()
-                .map(value -> value.toLowerCase(Locale.ROOT))
-                .anyMatch(value -> value.equals(transaction.merchantCategory().toLowerCase(Locale.ROOT)));
+                .map(value -> value.trim().toLowerCase(Locale.ROOT))
+                .anyMatch(value -> value.equals(transaction.merchantCategory().trim().toLowerCase(Locale.ROOT)));
         if (riskyCategory) {
             activations.add(new RuleActivation(
                     "COMERCIO_RIESGO",
@@ -136,7 +156,11 @@ public class TransactionScoringEngine {
         double a = Math.sin(deltaLatitude / 2) * Math.sin(deltaLatitude / 2)
                 + Math.cos(Math.toRadians(latitude1)) * Math.cos(Math.toRadians(latitude2))
                 * Math.sin(deltaLongitude / 2) * Math.sin(deltaLongitude / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        // En ciertas latitudes el error de coma flotante hace que 'a' supere 1.0,
+        // lo que deja Math.sqrt(1 - a) en NaN y por tanto la distancia en NaN
+        // (y NaN > umbral es siempre false, asi que el salto mas grande posible
+        // en la Tierra pasaba desapercibido). Se acota 'a' a 1.0 antes de la raiz.
+        double c = 2 * Math.asin(Math.min(1.0, Math.sqrt(a)));
         return earthRadiusKm * c;
     }
 

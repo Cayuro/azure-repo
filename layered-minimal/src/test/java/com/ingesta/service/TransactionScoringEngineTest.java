@@ -158,17 +158,19 @@ class TransactionScoringEngineTest {
         }
 
         @Test
-        void laVentanaNoTieneCotaSuperiorYCuentaTransaccionesPosteriores() {
-            // Documenta un comportamiento real: el filtro solo mira el inicio de la
-            // ventana, asi que transacciones ingestadas DESPUES de la actual elevan
-            // su score. Ocurre de verdad porque el scoring es asincrono.
+        void laVentanaTieneCotaSuperiorYNoCuentaTransaccionesPosteriores() {
+            // Corregido: el filtro ahora tambien exige que la transaccion del
+            // historial no sea posterior a la actual. Antes, transacciones
+            // ingestadas DESPUES de la actual elevaban su score (ocurria de verdad
+            // porque el scoring es asincrono); ahora solo la actual cuenta (1),
+            // por debajo del minimo de 3.
             TransactionScore score = puntuar(
                     una().conId("actual").enT0MasSegundos(180).construir(),
                     una().conId("futura1").enT0MasSegundos(240).construir(),
                     una().conId("futura2").enT0MasSegundos(300).construir());
 
-            assertTrue(activo(score, VELOCIDAD),
-                    "hoy las transacciones posteriores cuentan; si se acota la ventana por arriba, este test cambia");
+            assertFalse(activo(score, VELOCIDAD),
+                    "las transacciones posteriores a la actual ya no deben contar en la ventana");
         }
     }
 
@@ -270,6 +272,34 @@ class TransactionScoringEngineTest {
         }
 
         @Test
+        void elPromedioUsaPrecisionCompletaYYaNoDaFalsoNegativo() {
+            // Promedio real: (100.00 + 100.01) / 2 = 100.005 -> umbral 500.025.
+            // Redondeando el promedio a 2 decimales ANTES de multiplicar (HALF_UP)
+            // se obtenia 100.01 y un umbral de 500.050, que dejaba pasar 500.03
+            // como si no fuera atipico.
+            TransactionScore score = puntuar(
+                    una().conId("actual").conMonto("500.03").construir(),
+                    una().conId("p1").conMonto("100.00").construir(),
+                    una().conId("p2").conMonto("100.01").construir());
+
+            assertTrue(activo(score, MONTO), "500.03 supera el umbral real de 500.025");
+        }
+
+        @Test
+        void elPromedioUsaPrecisionCompletaYYaNoDaFalsoPositivo() {
+            // Promedio real: (10.00 + 10.00 + 10.01) / 3 = 10.003333... -> umbral
+            // 50.016666... Redondeando antes de multiplicar se obtenia 10.00 y un
+            // umbral de 50.000, que marcaba 50.01 como atipico sin serlo.
+            TransactionScore score = puntuar(
+                    una().conId("actual").conMonto("50.01").construir(),
+                    una().conId("p1").conMonto("10.00").construir(),
+                    una().conId("p2").conMonto("10.00").construir(),
+                    una().conId("p3").conMonto("10.01").construir());
+
+            assertFalse(activo(score, MONTO), "50.01 no supera el umbral real de 50.0167");
+        }
+
+        @Test
         void lanzaNullPointerSiUnMontoDelHistorialEsNulo() {
             // Alcanzable desde la cola: el poller deserializa sin validar.
             Transaction sinMonto = new Transaction(
@@ -353,33 +383,48 @@ class TransactionScoringEngineTest {
         }
 
         @Test
-        void unTiempoNegativoEntreTransaccionesSeTrataComoUnSegundo() {
-            // La "ultima" del historial es posterior a la actual (reproceso
-            // desordenado). El clamp convierte el intervalo negativo en 1 segundo,
-            // lo que produce una velocidad enorme y un falso positivo.
+        void unTiempoNegativoEntreTransaccionesNoActivaLaRegla() {
+            // Corregido: la "ultima" del historial es posterior a la actual
+            // (reproceso desordenado, el scoring es asincrono). Antes el clamp
+            // convertia el intervalo negativo en 1 segundo, produciendo una
+            // velocidad enorme y un falso positivo. Ahora, si el intervalo es
+            // negativo, no se puede razonar sobre el orden temporal y la regla
+            // simplemente no se evalua.
             TransactionScore score = puntuar(
                     una().conId("actual").en(BOGOTA_LAT, BOGOTA_LON).en(T0).construir(),
                     una().conId("posterior").en(MADRID_LAT, MADRID_LON).enT0MasSegundos(300).construir());
 
-            assertTrue(activo(score, GEO),
-                    "hoy un intervalo negativo se trata como +1s y dispara la regla");
+            assertFalse(activo(score, GEO),
+                    "un intervalo negativo no debe poder razonarse como velocidad y no debe activar la regla");
         }
 
         @Test
-        void elSaltoAntipodalNoSeDetectaEnCiertasLatitudes() {
-            // BUG REAL confirmado numericamente: en latitudes como 8, 12 u 82 el
-            // termino 'a' del haversine supera 1 por error de coma flotante, la
-            // raiz de (1-a) da NaN, la distancia es NaN y la comparacion
-            // NaN > 1000 es false. Resultado: el mayor salto posible en la Tierra
-            // (20015 km) NO activa la regla. En otras latitudes (0, 9, 45, 89) si
-            // funciona, asi que el fallo es intermitente.
+        void elSaltoAntipodalSiSeDetectaEnLatitudesQueAntesFallaban() {
+            // BUG REAL corregido: en latitudes como 8, 12 u 82 el termino 'a' del
+            // haversine superaba 1 por error de coma flotante, la raiz de (1-a)
+            // daba NaN, la distancia era NaN y la comparacion NaN > 1000 era
+            // false. Resultado: el mayor salto posible en la Tierra (20015 km) NO
+            // activaba la regla. Con el clamp de 'a' a 1.0 (via asin), ahora si
+            // se detecta.
             TransactionScore score = puntuar(
                     una().conId("actual").en(-8.0, 180.0).enT0MasSegundos(3600).construir(),
                     una().conId("p1").en(8.0, 0.0).en(T0).construir());
 
-            assertFalse(activo(score, GEO),
-                    "documenta el fallo actual: el salto antipodal a 8 grados queda sin detectar. "
-                            + "Al corregir el haversine (clamp de 'a' a 1.0 o usar asin) este test debe invertirse");
+            assertTrue(activo(score, GEO), "el salto antipodal a 8 grados ahora si se detecta");
+        }
+
+        @Test
+        void elSaltoAntipodalSeDetectaEnTodasLasLatitudesAfectadasYNoAfectadas() {
+            // Recorre las latitudes verificadas numericamente: 8, 12 y 82 daban
+            // NaN antes de la correccion; 0, 45 y 89 ya funcionaban. Tras el
+            // arreglo, TODAS deben activar la regla de forma uniforme.
+            for (double latitud : List.of(0.0, 8.0, 12.0, 45.0, 82.0, 89.0)) {
+                TransactionScore score = puntuar(
+                        una().conId("actual").en(-latitud, 180.0).enT0MasSegundos(3600).construir(),
+                        una().conId("p1").en(latitud, 0.0).en(T0).construir());
+
+                assertTrue(activo(score, GEO), "el salto antipodal en latitud " + latitud + " debe activar la regla");
+            }
         }
 
         @Test
@@ -390,6 +435,25 @@ class TransactionScoringEngineTest {
                     una().conId("p1").en(0.0, 0.0).en(T0).construir());
 
             assertTrue(activo(score, GEO), "el mismo salto en el ecuador si se detecta");
+        }
+
+        @Test
+        void elDesempatePorInstanteEsDeterministaSinImportarElOrdenDelHistorial() {
+            // Antes, con dos transacciones al mismo ingestedAt, Stream.max
+            // devolvia "la primera encontrada" en caso de empate: el resultado
+            // dependia del orden de iteracion del historial (a su vez del hash
+            // del repositorio real), asi que era intermitente. Con el desempate
+            // estable por transactionId, invertir el orden del historial no debe
+            // cambiar cual transaccion se usa como "la ultima".
+            Transaction actual = una().conId("actual").en(BOGOTA_LAT, BOGOTA_LON).enT0MasSegundos(60).construir();
+            Transaction previaBogota = una().conId("a-bogota").en(BOGOTA_LAT, BOGOTA_LON).en(T0).construir();
+            Transaction previaMadrid = una().conId("b-madrid").en(MADRID_LAT, MADRID_LON).en(T0).construir();
+
+            TransactionScore ordenAB = motor.score(actual, List.of(previaBogota, previaMadrid));
+            TransactionScore ordenBA = motor.score(actual, List.of(previaMadrid, previaBogota));
+
+            assertEquals(activo(ordenAB, GEO), activo(ordenBA, GEO),
+                    "el resultado no debe depender del orden en que llega el historial");
         }
 
         @Test
@@ -434,12 +498,12 @@ class TransactionScoringEngineTest {
         }
 
         @Test
-        void losEspaciosAlrededorImpidenLaCoincidencia() {
-            // No hay trim(): un espacio de mas evade la regla en silencio.
+        void losEspaciosAlrededorSeIgnoranGraciasAlTrim() {
+            // Corregido: antes, sin trim(), un espacio de mas evadia la regla en
+            // silencio. Ahora se recorta antes de comparar.
             TransactionScore score = puntuar(una().conCategoria(" gambling").construir());
 
-            assertFalse(activo(score, COMERCIO),
-                    "hoy un espacio sobrante evade la deteccion; si se anade trim() este test cambia");
+            assertTrue(activo(score, COMERCIO), "un espacio sobrante ya no debe evadir la deteccion");
         }
 
         @Test
