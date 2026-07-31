@@ -70,6 +70,21 @@ Los scripts de la variante con-vnet tienen comandos marcados como
 "verificar" en su encabezado (sintaxis de Flex Consumption relativamente
 nueva) - leelos antes de correrlos.
 
+## Encoding de los mensajes de la cola
+
+`host.json` fija `extensions.queues.messageEncoding = "none"`. Es
+importante: por defecto el host de Azure Functions espera que el contenido
+de la cola venga en **Base64** (herencia del SDK antiguo de .NET). Si el
+productor escribe texto plano, el host falla con
+`"Message decoding has failed! Check MessageEncoding settings"`, descarta el
+mensaje tras `maxDequeueCount` reintentos y lo manda a la cola de poison
+**sin llegar a invocar la Function** (no aparece ni un log de la app, lo que
+lo hace confuso de diagnosticar).
+
+Con `"none"` el mensaje se lee como texto plano UTF-8, que es lo que
+escriben tanto `az storage message put` como el SDK de Java
+(`QueueClient.sendMessage(String)`) que usa el App Service productor.
+
 ## Variables de entorno / App Settings que necesita la Function
 
 | Nombre | Descripcion |

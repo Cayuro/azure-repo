@@ -40,7 +40,7 @@ az network vnet subnet create \
   --name "$FUNCTION_SUBNET_NAME" \
   --address-prefixes "$FUNCTION_SUBNET_PREFIX" \
   --delegations "Microsoft.App/environments" \
-  --output none 2>/dev/null || echo "   (ya existia o hay que ajustar la delegacion a mano)"
+  --output none
 
 echo ">> Storage Account de runtime: creando/verificando $FUNCTION_STORAGE_ACCOUNT..."
 az storage account create \
@@ -51,7 +51,7 @@ az storage account create \
   --kind StorageV2 \
   --min-tls-version TLS1_2 \
   --https-only true \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 echo ">> Function App (Flex Consumption): creando/verificando $FUNCTION_APP_NAME..."
 az functionapp create \
@@ -60,9 +60,9 @@ az functionapp create \
   --storage-account "$FUNCTION_STORAGE_ACCOUNT" \
   --flexconsumption-location "$LOCATION" \
   --runtime java \
-  --runtime-version 21 \
+  --runtime-version 21.0 \
   --os-type Linux \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 echo ">> Activando Managed Identity..."
 az functionapp identity assign \

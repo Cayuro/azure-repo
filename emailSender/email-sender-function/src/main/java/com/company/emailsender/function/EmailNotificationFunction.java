@@ -16,14 +16,27 @@ public class EmailNotificationFunction {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().registerModule(new JavaTimeModule());
 
-    private final EmailService emailService;
+    /**
+     * Se construye de forma perezosa dentro de run(), no en el constructor: si la
+     * creacion del cliente de ACS falla (falta una app setting, credencial invalida...),
+     * la excepcion tiene que ocurrir dentro del try/catch para quedar logueada. Si se
+     * construye en el constructor, el worker de Java falla al instanciar la clase, la
+     * invocacion se reintenta hasta la cola de poison y no queda ni un solo log.
+     */
+    private EmailService emailService;
 
     public EmailNotificationFunction() {
-        this(new AzureCommunicationEmailService());
     }
 
     EmailNotificationFunction(EmailService emailService) {
         this.emailService = emailService;
+    }
+
+    private EmailService emailService() {
+        if (emailService == null) {
+            emailService = new AzureCommunicationEmailService();
+        }
+        return emailService;
     }
 
     @FunctionName("EmailNotificationFunction")
@@ -37,11 +50,14 @@ public class EmailNotificationFunction {
     ) {
         Logger logger = context.getLogger();
         try {
+            logger.info("EmailNotificationFunction invocada, deserializando mensaje...");
             FraudAlertEvent event = OBJECT_MAPPER.readValue(message, FraudAlertEvent.class);
             logger.info(() -> "Procesando alerta de fraude para transaccion " + event.transactionId());
-            emailService.send(event);
+            emailService().send(event);
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error procesando FraudAlertEvent, se reintentara via la cola de poison", e);
+            // Se loguea el mensaje de la excepcion aparte del stack trace: en Azure
+            // Functions el stack a veces no llega completo a Application Insights.
+            logger.log(Level.SEVERE, "Error procesando FraudAlertEvent: " + e, e);
             throw new RuntimeException(e);
         }
     }

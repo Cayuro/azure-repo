@@ -28,6 +28,13 @@ no VNet Integration en el resto. Duplicar el script no cambiaria nada.
   sola storage account**: la misma cuenta que tiene la cola de negocio sirve
   tambien como `AzureWebJobsStorage` de la Function, porque al no haber
   ningun bloqueo de red no hay conflicto en compartirla.
+
+  **Ojo**: el plan Consumption dinamico para Linux no esta disponible en
+  todas las regiones (ej. `chilecentral` no lo soporta, tira "Linux dynamic
+  workers are not available"). Si te pasa eso, exporta `PLAN_NAME` con el
+  nombre de un App Service Plan Linux que ya tengas (por ejemplo el mismo
+  del App Service que calcula el score) y `provision_function_app.sh` la
+  Function ahi en vez de Consumption — costo extra $0 si el plan ya existia.
 - **con-vnet**: la Storage Queue queda con acceso publico bloqueado y solo
   alcanzable via Private Endpoint. La Function necesita VNet Integration
   regional para llegar a ella, lo que obliga a usar el plan **Flex

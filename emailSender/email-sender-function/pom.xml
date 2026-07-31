@@ -23,7 +23,7 @@
         <!-- Datos del despliegue: ajustar antes de correr mvn azure-functions:deploy -->
         <functionAppName>func-email-sender-centinela</functionAppName>
         <functionResourceGroup>rg-centinela-prod</functionResourceGroup>
-        <functionAppRegion>eastus</functionAppRegion>
+        <functionAppRegion>chilecentral</functionAppRegion>
     </properties>
 
     <dependencies>

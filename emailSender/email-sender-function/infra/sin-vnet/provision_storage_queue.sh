@@ -45,7 +45,7 @@ az storage account create \
   --min-tls-version TLS1_2 \
   --https-only true \
   --allow-blob-public-access false \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 echo ">> Cola principal: creando/verificando $QUEUE_NAME..."
 az storage queue create \

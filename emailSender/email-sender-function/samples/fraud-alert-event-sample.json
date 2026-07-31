@@ -1,0 +1,19 @@
+{
+  "transactionId": "txn-test-001",
+  "accountId": "acc-12345",
+  "amount": 1500.00,
+  "currency": "USD",
+  "occurredAt": "2026-07-30T15:00:00Z",
+  "ingestedAt": "2026-07-30T15:00:05Z",
+  "latitude": 6.2442,
+  "longitude": -75.5812,
+  "merchantId": "merch-999",
+  "merchantCategory": "gambling",
+  "score": 85,
+  "threshold": 60,
+  "scoredAt": "2026-07-30T15:00:10Z",
+  "activations": [
+    { "ruleCode": "VELOCITY", "description": "3 transacciones en 3 minutos", "points": 35 },
+    { "ruleCode": "MERCHANT_RISK", "description": "Categoria de alto riesgo: gambling", "points": 20 }
+  ]
+}

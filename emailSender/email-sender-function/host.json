@@ -1,10 +1,12 @@
 {
   "version": "2.0",
   "logging": {
+    "logLevel": {
+      "default": "Information"
+    },
     "applicationInsights": {
       "samplingSettings": {
-        "isEnabled": true,
-        "excludedTypes": "Request"
+        "isEnabled": false
       }
     }
   },
@@ -17,7 +19,8 @@
       "maxPollingInterval": "00:00:02",
       "visibilityTimeout": "00:00:30",
       "batchSize": 8,
-      "maxDequeueCount": 5
+      "maxDequeueCount": 5,
+      "messageEncoding": "none"
     }
   }
 }

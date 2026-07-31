@@ -42,7 +42,7 @@ az storage account create \
   --min-tls-version TLS1_2 \
   --https-only true \
   --allow-blob-public-access false \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 echo ">> Cola principal: creando/verificando $QUEUE_NAME..."
 az storage queue create --account-name "$STORAGE_ACCOUNT" --name "$QUEUE_NAME" --auth-mode login --output none
@@ -57,7 +57,7 @@ az network vnet subnet create \
   --name "$PE_SUBNET_NAME" \
   --address-prefixes "$PE_SUBNET_PREFIX" \
   --private-endpoint-network-policies Disabled \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 echo ">> Restringiendo acceso publico de $STORAGE_ACCOUNT..."
 az storage account update \
@@ -79,13 +79,13 @@ az network private-endpoint create \
   --private-connection-resource-id "$STORAGE_ID" \
   --group-id queue \
   --connection-name "cn-${STORAGE_ACCOUNT}-queue" \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 echo ">> Private DNS Zone: creando/verificando..."
 az network private-dns zone create \
   --resource-group "$RG" \
   --name "privatelink.queue.core.windows.net" \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 az network private-dns link vnet create \
   --resource-group "$RG" \
@@ -93,7 +93,7 @@ az network private-dns link vnet create \
   --name "link-${VNET_NAME}-queue" \
   --virtual-network "$VNET_NAME" \
   --registration-enabled false \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 az network private-endpoint dns-zone-group create \
   --resource-group "$RG" \
@@ -101,7 +101,7 @@ az network private-endpoint dns-zone-group create \
   --name "zg-queue" \
   --private-dns-zone "privatelink.queue.core.windows.net" \
   --zone-name "queue" \
-  --output none 2>/dev/null || echo "   (ya existia)"
+  --output none
 
 if [ -n "$PRODUCER_PRINCIPAL_ID" ]; then
   echo ">> RBAC: 'Storage Queue Data Contributor' para el productor..."
