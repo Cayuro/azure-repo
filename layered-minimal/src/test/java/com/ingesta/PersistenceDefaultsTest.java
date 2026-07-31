@@ -51,7 +51,6 @@ class PersistenceDefaultsTest {
 
     @Test
     void fueraDelPerfilProdCosmosSigueApagado() throws Exception {
-        // VULN 4: ningun test ni arranque local puede hablar con cosmos-centinela-prod.
         assertThat(cargar("/application.properties").getProperty("spring.cloud.azure.cosmos.enabled"))
                 .isEqualTo("${INGESTA_COSMOS_ENABLED:false}");
     }
